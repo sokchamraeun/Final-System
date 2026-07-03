@@ -977,7 +977,9 @@ if (!empty($flat_products)) {
 
     <!-- Cart footer (always visible) -->
     <div class="cp-footer" id="cpFooter" <?= empty($cart) ? 'style="display:none"' : '' ?>>
-      <div class="cp-total-row">
+      <!-- Total hidden here — shown on the confirm/payment screen instead.
+           #cpTotal kept in DOM (display:none) because cpGetCartTotal() reads it for payment math. -->
+      <div class="cp-total-row" style="display:none">
         <span class="lbl">Total</span>
         <span class="amt" id="cpTotal">$<?= number_format($cp_total, 2) ?></span>
       </div>

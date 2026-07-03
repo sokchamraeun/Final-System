@@ -78,6 +78,7 @@ if (isset($_POST['add_product'])) {
 <title>Add Product | Obsidian Cafe</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script>(function(){var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');})();</script>
 
 <style>
 :root {
@@ -90,9 +91,22 @@ if (isset($_POST['add_product'])) {
     --accent-dark: #a0702a;
     --text: #f5f5f5;
     --text-muted: #888888;
+    --bg-input: #181818;
+    --bg-input-focus: #1e1e1e;
     --shadow-accent: 0 4px 20px rgba(209, 144, 75, 0.15);
     --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+[data-theme="light"] {
+    --bg: #f5f0eb;
+    --bg-card: #ffffff;
+    --border: #e8ddd2;
+    --border-hover: #d4c4b0;
+    --text: #1a1008;
+    --text-muted: #7a6a58;
+    --bg-input: #f0e9e0;
+    --bg-input-focus: #fdf8f3;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -178,7 +192,7 @@ body {
     padding: 12px 14px 12px 44px;
     border-radius: 10px;
     border: 1px solid var(--border);
-    background: #181818;
+    background: var(--bg-input);
     color: var(--text);
     font-size: 14px;
     font-family: 'Poppins', sans-serif;
@@ -197,7 +211,7 @@ body {
 .input-group select:focus {
     border-color: var(--accent);
     box-shadow: var(--shadow-accent);
-    background: #1e1e1e;
+    background: var(--bg-input-focus);
 }
 
 .file-input-wrapper {
@@ -208,13 +222,13 @@ body {
     text-align: center;
     transition: var(--transition);
     cursor: pointer;
-    background: #181818;
+    background: var(--bg-input);
     margin-bottom: 14px;
 }
 
 .file-input-wrapper:hover {
     border-color: var(--accent);
-    background: #1e1e1e;
+    background: var(--bg-input-focus);
 }
 
 .file-input-wrapper input[type="file"] {
@@ -405,6 +419,14 @@ document.getElementById('badgeText').addEventListener('input', function() {
     const badge = document.getElementById('badgePreview');
     if (val) { badge.textContent = val; wrap.style.display = 'block'; }
     else { wrap.style.display = 'none'; }
+});
+
+// follows shared theme key (toggled elsewhere)
+window.addEventListener('storage', function (e) {
+    if (e.key === 'theme') {
+        if (e.newValue === 'light') document.documentElement.setAttribute('data-theme', 'light');
+        else document.documentElement.removeAttribute('data-theme');
+    }
 });
 </script>
 

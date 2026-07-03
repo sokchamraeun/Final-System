@@ -90,6 +90,7 @@ if (isset($_GET['edit'])) {
     <title>Manage Rewards | Bird's Nest Coffee</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>(function(){var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light');})();</script>
     <style>
         /* ── CSS VARIABLES (dark-only) ── */
         :root {
@@ -114,6 +115,17 @@ if (isset($_GET['edit'])) {
             --shadow-accent: 0 4px 20px rgba(209,144,75,0.15);
             --transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
             --radius: 12px;
+        }
+
+        [data-theme="light"] {
+            --bg: #f5f0eb;
+            --bg-card: #ffffff;
+            --bg-card-hover: #fdf8f3;
+            --border: #e8ddd2;
+            --border-hover: #d4c4b0;
+            --text: #1a1008;
+            --text-muted: #7a6a58;
+            --text-light: #1a1008;
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -899,6 +911,14 @@ if (isset($_GET['edit'])) {
 </div>
 
 <script>
+// ── THEME (follows shared key; toggled elsewhere) ──
+window.addEventListener('storage', function (e) {
+    if (e.key === 'theme') {
+        if (e.newValue === 'light') document.documentElement.setAttribute('data-theme', 'light');
+        else document.documentElement.removeAttribute('data-theme');
+    }
+});
+
 // ── Client-side table pagination (10 rows/page) ──
 const __pagers = {};
 function setupPager(tableId, pagerId, pageSize) {
