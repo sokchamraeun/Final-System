@@ -80,6 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_
     $salary   = floatval($_POST['salary'] ?? 0);
     $dob      = $_POST['date_of_birth'] ?? '';
     $hire     = $_POST['hire_date'] ?? '';
+    if ($dob === '') $dob = null;
+    if ($hire === '') $hire = null;
     $address  = trim($_POST['address'] ?? '');
     $new_role = trim($_POST['emp_role'] ?? '');
     $shift_raw = trim($_POST['shift'] ?? '');

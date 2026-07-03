@@ -74,30 +74,36 @@ if (!function_exists('_migrate')) {
         $ins = $db->prepare("INSERT IGNORE INTO schema_migrations (id) VALUES (?)");
         $ins->bind_param("s", $id); $ins->execute();
     }
+    function _add_col(mysqli $db, string $table, string $column, string $def): void {
+        $chk = $db->query("SHOW COLUMNS FROM `$table` LIKE '$column'");
+        if ($chk && $chk->num_rows === 0) {
+            $db->query("ALTER TABLE `$table` ADD COLUMN $def");
+        }
+    }
 }
 
 // ── One-time schema migrations ──
 _migrate($conn, 'orders_cols_v1', function($db) {
-    $db->query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS prepared_by VARCHAR(100) NULL DEFAULT NULL");
-    $db->query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS prepared_by_role VARCHAR(50) NULL DEFAULT NULL");
-    $db->query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS table_number VARCHAR(10) NULL DEFAULT NULL");
-    $db->query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_id INT NULL");
+    _add_col($db, 'orders', 'prepared_by',    'VARCHAR(100) NULL DEFAULT NULL');
+    _add_col($db, 'orders', 'prepared_by_role','VARCHAR(50) NULL DEFAULT NULL');
+    _add_col($db, 'orders', 'table_number',   'VARCHAR(10) NULL DEFAULT NULL');
+    _add_col($db, 'orders', 'customer_id',    'INT NULL');
 });
 _migrate($conn, 'orders_started_at_v1', function($db) {
-    $db->query("ALTER TABLE orders ADD COLUMN IF NOT EXISTS started_at DATETIME NULL DEFAULT NULL");
+    _add_col($db, 'orders', 'started_at', 'DATETIME NULL DEFAULT NULL');
 });
 _migrate($conn, 'employees_user_id', function($db) {
-    $db->query("ALTER TABLE employees ADD COLUMN IF NOT EXISTS user_id INT NULL");
+    _add_col($db, 'employees', 'user_id', 'INT NULL');
 });
 _migrate($conn, 'employees_shift_v1', function($db) {
-    $db->query("ALTER TABLE employees ADD COLUMN IF NOT EXISTS shift ENUM('morning','afternoon','night') NULL DEFAULT NULL");
+    _add_col($db, 'employees', 'shift', "ENUM('morning','afternoon','night') NULL DEFAULT NULL");
 });
 // Display-only / non-POS staff (cleaner, waiter, etc.): is_pos=0 means no login, no role.
 _migrate($conn, 'employees_is_pos_v1', function($db) {
-    $db->query("ALTER TABLE employees ADD COLUMN IF NOT EXISTS is_pos TINYINT(1) NOT NULL DEFAULT 1");
+    _add_col($db, 'employees', 'is_pos', 'TINYINT(1) NOT NULL DEFAULT 1');
 });
 _migrate($conn, 'products_badge_text', function($db) {
-    $db->query("ALTER TABLE products ADD COLUMN IF NOT EXISTS badge_text VARCHAR(40) NULL DEFAULT NULL");
+    _add_col($db, 'products', 'badge_text', 'VARCHAR(40) NULL DEFAULT NULL');
 });
 $conn->query("CREATE TABLE IF NOT EXISTS login_attempts (id INT AUTO_INCREMENT PRIMARY KEY, ip VARCHAR(45) NOT NULL, attempted_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, INDEX idx_ip_time (ip, attempted_at)) DEFAULT CHARSET=utf8mb4");
 
@@ -317,8 +323,9 @@ _migrate($conn, 'remove_cafe_tables_v1', function($db) {
 
 // ── Migrate role_permissions: replace role VARCHAR with role_id INT FK ──
 _migrate($conn, 'rbac_role_permissions_int_fk_v1', function($db) {
-    // Add role_id column (idempotent — IF NOT EXISTS)
-    $db->query("ALTER TABLE role_permissions ADD COLUMN IF NOT EXISTS role_id INT NULL");
+    // Add role_id column (idempotent)
+    $chk = $db->query("SHOW COLUMNS FROM role_permissions LIKE 'role_id'");
+    if ($chk && $chk->num_rows === 0) $db->query("ALTER TABLE role_permissions ADD COLUMN role_id INT NULL");
     if ($db->errno) return;
 
     // Populate role_id from slug
@@ -347,7 +354,7 @@ _migrate($conn, 'rbac_role_permissions_int_fk_v1', function($db) {
 
 // ── Migrate users: replace role VARCHAR with role_id INT FK ──
 _migrate($conn, 'rbac_users_role_id_v1', function($db) {
-    $db->query("ALTER TABLE users ADD COLUMN IF NOT EXISTS role_id INT NULL");
+    _add_col($db, 'users', 'role_id', 'INT NULL');
     if ($db->errno) return;
     $db->query("UPDATE users u JOIN roles r ON r.slug = u.role SET u.role_id = r.id WHERE u.role_id IS NULL");
     if ($db->errno) return;
@@ -478,7 +485,7 @@ _migrate($conn, 'add_missing_fks_v1', function($db) {
 
 // ── Add category_id FK to products (categories table already exists) ──
 _migrate($conn, 'products_category_fk_v1', function($db) {
-    $db->query("ALTER TABLE products ADD COLUMN IF NOT EXISTS category_id INT NULL");
+    _add_col($db, 'products', 'category_id', 'INT NULL');
     if ($db->errno) return;
     // Populate from slug match (all existing slugs match exactly)
     $db->query("UPDATE products p JOIN categories c ON c.slug = p.category SET p.category_id = c.category_id WHERE p.category_id IS NULL");
@@ -577,7 +584,7 @@ _migrate($conn, 'rbac_barista_station_roleid_v1', function($db) {
 
 // ── Drink sizes: products.has_sizes, product_sizes table, order_items size columns ──
 _migrate($conn, 'drink_sizes_v1', function($db) {
-    $db->query("ALTER TABLE products ADD COLUMN IF NOT EXISTS has_sizes TINYINT(1) NOT NULL DEFAULT 0");
+    _add_col($db, 'products', 'has_sizes', 'TINYINT(1) NOT NULL DEFAULT 0');
     if ($db->errno) return;
 
     $db->query("CREATE TABLE IF NOT EXISTS product_sizes (
@@ -595,9 +602,8 @@ _migrate($conn, 'drink_sizes_v1', function($db) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     if ($db->errno) return;
 
-    $db->query("ALTER TABLE order_items
-        ADD COLUMN IF NOT EXISTS size_code  VARCHAR(10) NULL,
-        ADD COLUMN IF NOT EXISTS size_label VARCHAR(20) NULL");
+    _add_col($db, 'order_items', 'size_code',  'VARCHAR(10) NULL');
+    _add_col($db, 'order_items', 'size_label', 'VARCHAR(20) NULL');
 });
 
 // ── Loyalty history: widen type ENUM so adjustment rows store correctly ──

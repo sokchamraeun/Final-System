@@ -18,6 +18,8 @@ if (isset($_POST['update'])) {
     $salary   = $_POST['salary']        ?? '0';
     $dob      = $_POST['date_of_birth'] ?? '';
     $hire     = $_POST['hire_date']     ?? '';
+    if ($dob === '') $dob = null;
+    if ($hire === '') $hire = null;
     $address  = $_POST['address']       ?? '';
     $new_role = trim($_POST['emp_role'] ?? '');
 

@@ -2,7 +2,10 @@
 require 'admin_only.php';
 require 'config.php';
 
-$conn->query("ALTER TABLE employees ADD COLUMN IF NOT EXISTS user_id INT NULL");
+$r = $conn->query("SHOW COLUMNS FROM employees LIKE 'user_id'");
+if ($r && $r->num_rows === 0) {
+    $conn->query("ALTER TABLE employees ADD COLUMN user_id INT NULL");
+}
 
 $id = intval($_GET['id'] ?? 0);
 

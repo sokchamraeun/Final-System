@@ -3,7 +3,10 @@ require 'admin_only.php';
 require 'config.php';
 
 // Ensure employees table has user_id link column
-$conn->query("ALTER TABLE employees ADD COLUMN IF NOT EXISTS user_id INT NULL");
+$hasCol = $conn->query("SHOW COLUMNS FROM employees LIKE 'user_id'");
+if ($hasCol && $hasCol->num_rows === 0) {
+    $conn->query("ALTER TABLE employees ADD COLUMN user_id INT NULL");
+}
 // Backfill existing rows that predate this column (best-effort using old ID assumption).
 // Scoped to is_pos=1 only — display-only/non-POS staff legitimately have a NULL user_id
 // and must never be auto-linked to a random user.
@@ -34,8 +37,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $job_raw  = trim($_POST['job_title'] ?? '');
     $job      = ($job_raw === '__other__') ? trim($_POST['job_title_custom'] ?? '') : $job_raw;
     $salary   = (float)($_POST['salary'] ?? 0);
-    $dob      = $_POST['date_of_birth'] ?? '';
-    $hire     = $_POST['hire_date'] ?? '';
+$dob      = $_POST['date_of_birth'] ?? '';
+$hire     = $_POST['hire_date'] ?? '';
+if ($dob === '') $dob = null;
+if ($hire === '') $hire = null;
     $address  = trim($_POST['address'] ?? '');
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
@@ -83,25 +88,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $s1 = $conn->prepare("INSERT INTO employees (name,phone,job_title,salary,date_of_birth,hire_date,address,photo,is_pos) VALUES (?,?,?,?,?,?,?,?,?)");
         $s1->bind_param("sssdssssi",$name,$phone,$job,$salary,$dob,$hire,$address,$photo,$is_pos);
-        $s1->execute();
-        $emp_id = $conn->insert_id;
+        if (!$s1->execute()) { $errors[] = 'Database error adding employee: ' . $s1->error; }
+        if (empty($errors)) {
+            $emp_id = $conn->insert_id;
 
-        // POS staff get a login + role; display-only staff get neither (user_id stays NULL).
-        if ($is_pos) {
-            $hp = password_hash($password, PASSWORD_DEFAULT);
-            $s2 = $conn->prepare("INSERT INTO users (username,password,role_id) VALUES (?,?,(SELECT id FROM roles WHERE slug=?))");
-            $s2->bind_param("sss",$username,$hp,$role);
-            $s2->execute();
-            $usr_id = $conn->insert_id;
+            // POS staff get a login + role; display-only staff get neither (user_id stays NULL).
+            if ($is_pos) {
+                $hp = password_hash($password, PASSWORD_DEFAULT);
+                $s2 = $conn->prepare("INSERT INTO users (username,password,role_id) VALUES (?,?,(SELECT id FROM roles WHERE slug=?))");
+                $s2->bind_param("sss",$username,$hp,$role);
+                if (!$s2->execute()) { $errors[] = 'Database error creating login: ' . $s2->error; }
+                if (empty($errors)) {
+                    $usr_id = $conn->insert_id;
 
-            // Store the real user_id link on the employee row
-            $s3 = $conn->prepare("UPDATE employees SET user_id = ? WHERE employee_id = ?");
-            $s3->bind_param("ii", $usr_id, $emp_id);
-            $s3->execute();
+                    // Store the real user_id link on the employee row
+                    $s3 = $conn->prepare("UPDATE employees SET user_id = ? WHERE employee_id = ?");
+                    $s3->bind_param("ii", $usr_id, $emp_id);
+                    if (!$s3->execute()) { $errors[] = 'Database error linking account: ' . $s3->error; }
+                }
+            }
         }
 
-        header("Location: employees.php?added=1");
-        exit;
+        if (empty($errors)) {
+            header("Location: employees.php?added=1");
+            exit;
+        }
     }
 }
 ?>
