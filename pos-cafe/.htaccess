@@ -1,0 +1,46 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Do not rewrite existing files or directories (assets, api files, etc.)
+    RewriteCond %{REQUEST_FILENAME} -f [OR]
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
+
+    # API routes: /api/endpoint → api/endpoint.php
+    RewriteRule ^api/(\w+)/?$ api/$1.php [L,QSA]
+
+    # CRUD routes with numeric ID: /module/action/id → pages/module/action.php?id=id
+    RewriteRule ^(\w+)/(\w+)/(\d+)/?$ pages/$1/$2.php?id=$3 [L,QSA]
+
+    # CRUD routes without ID: /module/action → pages/module/action.php
+    RewriteRule ^(\w+)/(\w+)/?$ pages/$1/$2.php [L,QSA]
+
+    # Migrated module .php URLs → clean URLs (301), replacing old PHP redirect shims
+    RewriteRule ^menu\.php$ menu [L,R=301,QSA]
+    RewriteRule ^products\.php$ products [L,R=301,QSA]
+    RewriteRule ^employees\.php$ employees [L,R=301,QSA]
+    RewriteRule ^categories\.php$ categories [L,R=301,QSA]
+    RewriteRule ^ingredients\.php$ inventory [L,R=301,QSA]
+    RewriteRule ^suppliers\.php$ suppliers [L,R=301,QSA]
+    RewriteRule ^purchase_orders\.php$ purchase-orders [L,R=301,QSA]
+    RewriteRule ^stands\.php$ stands [L,R=301,QSA]
+    RewriteRule ^stock_count\.php$ stock [L,R=301,QSA]
+    RewriteRule ^settings\.php$ settings [L,R=301,QSA]
+    RewriteRule ^loyalty_dashboard\.php$ loyalty [L,R=301,QSA]
+    RewriteRule ^manage_roles\.php$ roles [L,R=301,QSA]
+    RewriteRule ^recipes_view\.php$ recipes [L,R=301,QSA]
+    RewriteRule ^ingredient_history\.php$ ingredient/history [L,R=301,QSA]
+    RewriteRule ^ingredient_report\.php$ ingredient/report [L,R=301,QSA]
+    RewriteRule ^view_order\.php$ orders/board [L,R=301,QSA]
+    RewriteRule ^view_order/?$ orders/board [L,R=301,QSA]
+
+    # Legacy .php requests (AJAX from legacy pages): /pos-cafe/name.php → pages/legacy/name.php
+    RewriteRule ^([\w-]+)\.php$ pages/legacy/$1.php [L,QSA]
+
+    # Known migrated modules — take priority over legacy clean URLs
+    RewriteRule ^(dashboard|products|menu|categories|levels|orders|attendance|employees|roles|settings|announcements|inventory|recipes|suppliers|purchase-orders|stock|loyalty|payment|cart|stands|reports|admins|receipts)/?$ pages/$1/index.php [L,QSA]
+
+    # Legacy clean URLs: /pos-cafe/{name} → pages/legacy/{name}.php
+    # Catches everything not in the module list above
+    RewriteRule ^([\w-]+)/?$ pages/legacy/$1.php [L,QSA]
+</IfModule>

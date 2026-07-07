@@ -149,7 +149,7 @@ if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) >
 $_SESSION['last_activity'] = time();
 
 // ── Re-sync role from DB so admin role changes take effect on next page load ──
-require_once 'config.php';
+require_once __DIR__ . '/config.php';
 $_rs = $conn->prepare("SELECT u.role_id, r.slug AS role FROM users u JOIN roles r ON r.id = u.role_id WHERE u.user_id = ?");
 $_rs->bind_param("i", $_SESSION['user_id']);
 $_rs->execute();

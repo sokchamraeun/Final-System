@@ -1,8 +1,8 @@
 <?php
-// App root for the POS — no public storefront. Route to the right place.
+// App root - route to the right place.
 if (session_status() === PHP_SESSION_NONE) session_start();
 if (isset($_SESSION['user_id'])) {
-    header('Location: dashboard.php');
+    header('Location: /FinalSystem/pos-cafe/dashboard');
 } else {
     header('Location: login.php');
 }

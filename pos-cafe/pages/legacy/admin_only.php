@@ -1,0 +1,31 @@
+<?php
+if (session_status() === PHP_SESSION_NONE) session_start();
+
+require_once __DIR__ . '/../../../config.php';
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit;
+}
+
+// â”€â”€ Session timeout: 30 minutes idle â”€â”€
+$timeout = 30 * 60;
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout) {
+    session_unset();
+    session_destroy();
+    header("Location: login.php?timeout=1");
+    exit;
+}
+$_SESSION['last_activity'] = time();
+
+// â”€â”€ Role check: admin or manager only â”€â”€
+$stmt = $conn->prepare("SELECT r.slug AS role FROM users u JOIN roles r ON r.id = u.role_id WHERE u.user_id = ?");
+$stmt->bind_param("i", $_SESSION['user_id']);
+$stmt->execute();
+$user = $stmt->get_result()->fetch_assoc();
+
+if (!$user || !in_array($user['role'], ['admin', 'manager'])) {
+    header('Location: /FinalSystem/pos-cafe/index.php?denied=1');
+    exit;
+}
+?>

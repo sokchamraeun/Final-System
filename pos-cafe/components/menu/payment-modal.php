@@ -1,0 +1,73 @@
+<?php
+$add_to_order_mode = $add_to_order_mode ?? 0;
+?>
+<div id="cpPayModal" class="cp-paymodal">
+  <div class="cp-paymodal-card" id="cpPayModalCard">
+    <div class="cp-paymodal-head">
+      <h3><i class="fa-solid fa-credit-card" style="color:var(--orange, #14b8a6);"></i> Payment</h3>
+      <button type="button" class="cp-paymodal-close" id="cpPayModalClose" onclick="cpClosePayModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="cp-pm-breakdown">
+      <div class="cp-pm-row"><span>Subtotal</span><span id="cpPmSubtotal">$0.00</span></div>
+      <div class="cp-pm-row"><span>Tax (<?= (int)TAX_RATE ?>%)</span><span id="cpPmTax">$0.00</span></div>
+    </div>
+    <div class="cp-pm-hero">
+      <span class="cp-pm-hero-label">Total due</span>
+      <span class="cp-pm-hero-amt" id="cpPmTotal">$0.00</span>
+      <span class="cp-pm-hero-khr" id="cpPmKhr">&#x17DB; 0</span>
+    </div>
+    <div id="cpPayModalBody">
+      <?php if (!$add_to_order_mode): ?>
+      <div class="cp-pm-methods-label">How is the customer paying?</div>
+      <div class="cp-pay-methods" id="cpPayMethods">
+        <div class="cp-pay-method" data-method="bakong" onclick="cpTogglePayment(this)">
+          <input type="checkbox" value="bakong">
+          <i class="cp-pm-ico fa-solid fa-qrcode"></i><span class="cp-pm-lbl">Bakong</span>
+          <i class="cp-pm-check fa-solid fa-circle-check"></i>
+        </div>
+        <div class="cp-pay-method" data-method="cash" onclick="cpTogglePayment(this)">
+          <input type="checkbox" value="cash">
+          <i class="cp-pm-ico fa-solid fa-money-bill-wave"></i><span class="cp-pm-lbl">Cash</span>
+          <i class="cp-pm-check fa-solid fa-circle-check"></i>
+        </div>
+        <div class="cp-pay-method" data-method="paylater" onclick="cpTogglePayment(this)">
+          <input type="checkbox" value="paylater">
+          <i class="cp-pm-ico fa-solid fa-clock"></i><span class="cp-pm-lbl">Later</span>
+          <i class="cp-pm-check fa-solid fa-circle-check"></i>
+        </div>
+        <div class="cp-pay-method" data-method="riel" onclick="cpTogglePayment(this)">
+          <input type="checkbox" value="riel">
+          <i class="cp-pm-ico fa-solid fa-coins"></i><span class="cp-pm-lbl">Riel &#x17DB;</span>
+          <i class="cp-pm-check fa-solid fa-circle-check"></i>
+        </div>
+      </div>
+      <div class="cp-split-inputs" id="cpSplitInputs"><div id="cpSplitRows"></div></div>
+
+      <div class="cp-change-calc" id="cpRielCalc">
+        <label><i class="fa-solid fa-coins" style="color:#e74c3c;margin-right:4px;"></i> Amount in Riel (KHR)</label>
+        <input type="number" id="cpRielReceived" step="1" min="0" placeholder="0" oninput="cpCalcRielChange()" onfocus="this.select()">
+        <div class="cp-change-row">
+          <span class="change-label">USD Equivalent</span>
+          <span class="change-amount" id="cpRielUsdEquiv">$0.00</span>
+        </div>
+        <div class="cp-change-row" id="cpRielChangeRow" style="display:none;">
+          <span class="change-label">Change (KHR)</span>
+          <span class="change-amount" id="cpRielChangeKhr">&#x17DB;0</span>
+        </div>
+      </div>
+
+      <div class="cp-change-calc" id="cpChangeCalc">
+        <label><i class="fa-solid fa-money-bill-wave" style="color:#55e087;margin-right:4px;"></i> Amount Received</label>
+        <input type="number" id="cpCashReceived" step="0.01" min="0" placeholder="0.00" oninput="cpCalcChange()" onfocus="this.select()">
+        <div class="cp-change-row">
+          <span class="change-label">Change to give back</span>
+          <span class="change-amount" id="cpChangeAmount">$0.00</span>
+        </div>
+      </div>
+      <?php endif; ?>
+    </div>
+    <button type="button" class="cp-pm-confirm" id="cpConfirmPayBtn">
+      <i class="fa-solid fa-check" id="cpConfirmPayIcon"></i> <span id="cpConfirmPayText">Confirm Payment</span>
+    </button>
+  </div>
+</div>

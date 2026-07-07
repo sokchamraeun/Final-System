@@ -33,3 +33,12 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # ── Disable directory listing ────────────────────────────────────────────────
 Options -Indexes
+
+# ── Legacy URL redirects ──────────────────────────────────────────────────────
+# Root PHP files have been moved into pos-cafe/pages/legacy/.
+# Redirect old URLs (e.g. /FinalSystem/view_order.php) to new clean URLs
+# (e.g. /FinalSystem/pos-cafe/view_order) so the browser address bar updates.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/FinalSystem/pos-cafe/
+RewriteRule ^([\w-]+)\.php$ /FinalSystem/pos-cafe/$1 [R=301,L,QSA]

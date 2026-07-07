@@ -1,0 +1,13 @@
+/* ============================================================
+   pos-cafe — optional custom CSS.
+   The UI is built with Tailwind (CDN, configured in the layout
+   header), so this file is intentionally minimal. Add project
+   overrides here only when a utility class genuinely cannot
+   express the rule. Include with:
+     <link rel="stylesheet" href="<?= asset('css/custom.css') ?>">
+   ============================================================ */
+
+/* Thin amber scrollbars to match the theme (optional nicety). */
+.scroll-amber { scrollbar-width: thin; scrollbar-color: rgba(245, 158, 11, .4) transparent; }
+.scroll-amber::-webkit-scrollbar { width: 6px; height: 6px; }
+.scroll-amber::-webkit-scrollbar-thumb { background: rgba(245, 158, 11, .4); border-radius: 99px; }

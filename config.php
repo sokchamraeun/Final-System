@@ -2,17 +2,17 @@
 date_default_timezone_set('Asia/Phnom_Penh');
 
 // Database connection
-// ⚠️  Run this once in phpMyAdmin/MySQL CLI before changing these credentials:
+// âš ï¸  Run this once in phpMyAdmin/MySQL CLI before changing these credentials:
 //   CREATE USER 'cafe_pos'@'localhost' IDENTIFIED BY 'Caf3P0S!2025#Kh';
 //   GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER ON db_coffee.* TO 'cafe_pos'@'localhost';
 //   FLUSH PRIVILEGES;
 // Local XAMPP defaults. In production, override these via a git-ignored
 // db_config.local.php (copy db_config.local.example.php) so real credentials
-// never live in the repo — same pattern as bakong_config.local.php.
+// never live in the repo â€” same pattern as bakong_config.local.php.
 $servername = "localhost";
 $username   = "root";
 $password   = "";
-$dbname     = "db_coffee";
+$dbname     = "db_coffeeshop_final";
 
 if (is_file(__DIR__ . '/db_config.local.php')) {
     require __DIR__ . '/db_config.local.php';
@@ -24,7 +24,7 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// ── CRITICAL: Force utf8mb4 so 4-byte emoji are read correctly ──
+// â”€â”€ CRITICAL: Force utf8mb4 so 4-byte emoji are read correctly â”€â”€
 $conn->set_charset('utf8mb4');
 
 // --- Check if constants are already defined before defining them ---
@@ -35,12 +35,12 @@ if (!defined('PAYMENT_API_TOKEN')) {
     define('PAYMENT_API_TOKEN', 'your_token_here');
 }
 
-// ── LOAD SETTINGS FROM DB ──
+// â”€â”€ LOAD SETTINGS FROM DB â”€â”€
 $_cafe_settings = [];
 $_sr = $conn->query("SELECT setting_key, setting_value FROM settings");
 if ($_sr) { while ($row = $_sr->fetch_assoc()) $_cafe_settings[$row['setting_key']] = $row['setting_value']; }
 
-// ── Date-range check for promotions ──
+// â”€â”€ Date-range check for promotions â”€â”€
 $_today = date('Y-m-d');
 $_hh_sd = $_cafe_settings['happy_hour_start_date'] ?? '';
 $_hh_ed = $_cafe_settings['happy_hour_end_date']   ?? '';
@@ -62,7 +62,7 @@ if (!defined('DAILY_SALES_TARGET'))  define('DAILY_SALES_TARGET',   (float)($_ca
 if (!defined('STAND_COUNT'))         define('STAND_COUNT',          max(1, min(100, (int)($_cafe_settings['stand_count'] ?? 20))));
 unset($_cafe_settings, $_sr, $_today, $_hh_sd, $_hh_ed, $_hh_in_range, $_bx_sd, $_bx_ed, $_bx_in_range);
 
-// ── Schema migrations tracker ──
+// â”€â”€ Schema migrations tracker â”€â”€
 $conn->query("CREATE TABLE IF NOT EXISTS schema_migrations (id VARCHAR(100) NOT NULL PRIMARY KEY, applied_at DATETIME DEFAULT CURRENT_TIMESTAMP) DEFAULT CHARSET=utf8mb4");
 if (!function_exists('_migrate')) {
     function _migrate(mysqli $db, string $id, callable $fn): void {
@@ -82,7 +82,7 @@ if (!function_exists('_migrate')) {
     }
 }
 
-// ── One-time schema migrations ──
+// â”€â”€ One-time schema migrations â”€â”€
 _migrate($conn, 'orders_cols_v1', function($db) {
     _add_col($db, 'orders', 'prepared_by',    'VARCHAR(100) NULL DEFAULT NULL');
     _add_col($db, 'orders', 'prepared_by_role','VARCHAR(50) NULL DEFAULT NULL');
@@ -155,7 +155,7 @@ _migrate($conn, 'order_remakes_v1', function($db) {
     ) DEFAULT CHARSET=utf8mb4");
 });
 
-// ── New tables: categories, customers ──
+// â”€â”€ New tables: categories, customers â”€â”€
 $conn->query("CREATE TABLE IF NOT EXISTS categories (
     category_id INT AUTO_INCREMENT PRIMARY KEY,
     slug VARCHAR(50) NOT NULL UNIQUE,
@@ -182,7 +182,7 @@ $conn->query("CREATE TABLE IF NOT EXISTS customers (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) DEFAULT CHARSET=utf8mb4");
 
-// ── RBAC: create tables ──
+// â”€â”€ RBAC: create tables â”€â”€
 $conn->query("CREATE TABLE IF NOT EXISTS permissions (
     id INT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -209,16 +209,16 @@ $conn->query("CREATE TABLE IF NOT EXISTS roles (
 
 if ((int)$conn->query("SELECT COUNT(*) FROM roles")->fetch_row()[0] === 0) {
     $conn->query("INSERT INTO roles (slug, name, icon, color, description, is_system) VALUES
-        ('admin',            'Admin',            'fa-user-shield',  '#d1904b', 'Full system access — cannot be restricted', 1),
-        ('manager',          'Manager',          'fa-user-tie',     '#3498db', 'Operational access — configure below',     1),
-        ('staff',            'Cashier',          'fa-user',         '#55e087', 'Limited access — configure below',         1),
+        ('admin',            'Admin',            'fa-user-shield',  '#d1904b', 'Full system access â€” cannot be restricted', 1),
+        ('manager',          'Manager',          'fa-user-tie',     '#3498db', 'Operational access â€” configure below',     1),
+        ('staff',            'Cashier',          'fa-user',         '#55e087', 'Limited access â€” configure below',         1),
         ('barista',          'Barista',          'fa-mug-hot',      '#d1904b', 'Kitchen display + recipe reference',        0),
-        ('supervisor',       'Supervisor',       'fa-user-check',   '#f39c12', 'Shift runner — operational oversight',      0),
+        ('supervisor',       'Supervisor',       'fa-user-check',   '#f39c12', 'Shift runner â€” operational oversight',      0),
         ('inventory_clerk',  'Inventory',        'fa-box-open',     '#1abc9c', 'Stock and procurement management',          0)");
 }
 $conn->query("UPDATE roles SET name='Inventory' WHERE slug='inventory_clerk' AND name='Inventory Clerk'");
 
-// ── RBAC: seed permissions + defaults (runs once) ──
+// â”€â”€ RBAC: seed permissions + defaults (runs once) â”€â”€
 if ((int)$conn->query("SELECT COUNT(*) FROM permissions")->fetch_row()[0] === 0) {
     $perms = [
         ['Dashboard',          'dashboard',       'Overview',    1],
@@ -243,13 +243,13 @@ if ((int)$conn->query("SELECT COUNT(*) FROM permissions")->fetch_row()[0] === 0)
     foreach ($perms as $p) { $ps->bind_param("sssi",$p[0],$p[1],$p[2],$p[3]); $ps->execute(); }
 
     // Default manager permissions
-    $conn->query("INSERT IGNORE INTO role_permissions (role,permission_id) SELECT 'manager',id FROM permissions WHERE slug IN ('dashboard','find_orders','view_orders','loyalty','products','ingredients','recipes','manage_recipes','suppliers','purchase_orders','report','announcements','attendance','promotions','reset_password')");
+    $conn->query("INSERT IGNORE INTO role_permissions (role,permission_id) SELECT 'manager',id FROM permissions WHERE slug IN ('dashboard','find_orders','view_orders','loyalty','products','categories','ingredients','recipes','manage_recipes','suppliers','purchase_orders','report','announcements','attendance','promotions','reset_password')");
 
     // Default staff permissions
     $conn->query("INSERT IGNORE INTO role_permissions (role,permission_id) SELECT 'staff',id FROM permissions WHERE slug IN ('dashboard','find_orders','loyalty')");
 }
 
-// ── RBAC: register newly-added permissions for existing installs (run once via migrations) ──
+// â”€â”€ RBAC: register newly-added permissions for existing installs (run once via migrations) â”€â”€
 _migrate($conn, 'rbac_perm_upgrades_v1', function($db) {
     $db->query("INSERT IGNORE INTO permissions (name, slug, module, sort_order) VALUES ('Manage Recipes', 'manage_recipes', 'Inventory', 17)");
     $db->query("INSERT IGNORE INTO role_permissions (role, permission_id) SELECT 'manager', id FROM permissions WHERE slug='manage_recipes'");
@@ -291,7 +291,7 @@ _migrate($conn, 'rbac_barista_station_recon_v1', function($db) {
     $db->query("INSERT IGNORE INTO role_permissions (role, permission_id) SELECT 'manager', id FROM permissions WHERE slug='cash_reconciliation'");
 });
 
-// ── Add customer_display permission ──
+// â”€â”€ Add customer_display permission â”€â”€
 _migrate($conn, 'rbac_customer_display_v1', function($db) {
     $db->query("INSERT IGNORE INTO permissions (name, slug, module, sort_order) VALUES ('Customer Display', 'customer_display', 'Operations', 21)");
     $db->query("INSERT IGNORE INTO role_permissions (role, permission_id) SELECT 'supervisor', id FROM permissions WHERE slug='customer_display'");
@@ -299,7 +299,7 @@ _migrate($conn, 'rbac_customer_display_v1', function($db) {
     $db->query("INSERT IGNORE INTO role_permissions (role, permission_id) SELECT 'barista',    id FROM permissions WHERE slug='customer_display'");
 });
 
-// ── Remove barista_station from management roles (they use full dashboard, not barista display) ──
+// â”€â”€ Remove barista_station from management roles (they use full dashboard, not barista display) â”€â”€
 _migrate($conn, 'rbac_barista_station_mgmt_fix_v1', function($db) {
     $db->query("DELETE rp FROM role_permissions rp
                 JOIN permissions p ON rp.permission_id = p.id
@@ -307,12 +307,12 @@ _migrate($conn, 'rbac_barista_station_mgmt_fix_v1', function($db) {
                   AND rp.role IN ('admin', 'manager', 'supervisor')");
 });
 
-// ── Drop legacy token_number_old column (unused) ──
+// â”€â”€ Drop legacy token_number_old column (unused) â”€â”€
 _migrate($conn, 'orders_drop_token_number_old_v1', function($db) {
     $db->query("ALTER TABLE orders DROP COLUMN IF EXISTS token_number_old");
 });
 
-// ── Remove redundant Table Management (cafe_tables) — superseded by stand numbers ──
+// â”€â”€ Remove redundant Table Management (cafe_tables) â€” superseded by stand numbers â”€â”€
 _migrate($conn, 'remove_cafe_tables_v1', function($db) {
     $db->query("DELETE rp FROM role_permissions rp
                 JOIN permissions p ON rp.permission_id = p.id
@@ -321,7 +321,7 @@ _migrate($conn, 'remove_cafe_tables_v1', function($db) {
     $db->query("DROP TABLE IF EXISTS cafe_tables");
 });
 
-// ── Migrate role_permissions: replace role VARCHAR with role_id INT FK ──
+// â”€â”€ Migrate role_permissions: replace role VARCHAR with role_id INT FK â”€â”€
 _migrate($conn, 'rbac_role_permissions_int_fk_v1', function($db) {
     // Add role_id column (idempotent)
     $chk = $db->query("SHOW COLUMNS FROM role_permissions LIKE 'role_id'");
@@ -332,7 +332,7 @@ _migrate($conn, 'rbac_role_permissions_int_fk_v1', function($db) {
     $db->query("UPDATE role_permissions rp JOIN roles r ON r.slug = rp.role SET rp.role_id = r.id WHERE rp.role_id IS NULL");
     if ($db->errno) return;
 
-    // Remove rows that cannot be migrated — orphaned permission_id or unrecognised role slug
+    // Remove rows that cannot be migrated â€” orphaned permission_id or unrecognised role slug
     $db->query("DELETE FROM role_permissions WHERE permission_id NOT IN (SELECT id FROM permissions)");
     if ($db->errno) return;
     $db->query("DELETE FROM role_permissions WHERE role_id IS NULL");
@@ -352,13 +352,13 @@ _migrate($conn, 'rbac_role_permissions_int_fk_v1', function($db) {
         ADD CONSTRAINT fk_rp_perm FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE");
 });
 
-// ── Migrate users: replace role VARCHAR with role_id INT FK ──
+// â”€â”€ Migrate users: replace role VARCHAR with role_id INT FK â”€â”€
 _migrate($conn, 'rbac_users_role_id_v1', function($db) {
     _add_col($db, 'users', 'role_id', 'INT NULL');
     if ($db->errno) return;
     $db->query("UPDATE users u JOIN roles r ON r.slug = u.role SET u.role_id = r.id WHERE u.role_id IS NULL");
     if ($db->errno) return;
-    // Fallback: any user whose role slug has no match → map to 'staff'
+    // Fallback: any user whose role slug has no match â†’ map to 'staff'
     $db->query("UPDATE users u JOIN roles r ON r.slug='staff' SET u.role_id = r.id WHERE u.role_id IS NULL");
     if ($db->errno) return;
     $db->query("ALTER TABLE users
@@ -367,7 +367,7 @@ _migrate($conn, 'rbac_users_role_id_v1', function($db) {
         ADD CONSTRAINT fk_users_role FOREIGN KEY (role_id) REFERENCES roles(id)");
 });
 
-// ── Audit log table ──
+// â”€â”€ Audit log table â”€â”€
 _migrate($conn, 'role_audit_log_v1', function($db) {
     $db->query("CREATE TABLE IF NOT EXISTS role_audit_log (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -381,7 +381,7 @@ _migrate($conn, 'role_audit_log_v1', function($db) {
     ) DEFAULT CHARSET=utf8mb4");
 });
 
-// ── Split cancel/refund columns out of orders into dedicated tables ──
+// â”€â”€ Split cancel/refund columns out of orders into dedicated tables â”€â”€
 _migrate($conn, 'orders_split_cancel_refund_v1', function($db) {
     $db->query("CREATE TABLE IF NOT EXISTS order_cancellations (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -427,7 +427,7 @@ _migrate($conn, 'orders_split_cancel_refund_v1', function($db) {
         DROP COLUMN is_refunded");
 });
 
-// ── Add missing FK constraints across all tables ──
+// â”€â”€ Add missing FK constraints across all tables â”€â”€
 _migrate($conn, 'add_missing_fks_v1', function($db) {
     // Nullify orphaned rows before attaching FKs
     $db->query("UPDATE orders SET employee_id = NULL WHERE employee_id IS NOT NULL AND employee_id NOT IN (SELECT employee_id FROM employees)");
@@ -435,7 +435,7 @@ _migrate($conn, 'add_missing_fks_v1', function($db) {
     $db->query("UPDATE ingredient_history SET order_id = NULL WHERE order_id IS NOT NULL AND order_id NOT IN (SELECT order_id FROM orders)");
     if ($db->errno) return;
 
-    // orders → users / customers / employees (all nullable → SET NULL on delete)
+    // orders â†’ users / customers / employees (all nullable â†’ SET NULL on delete)
     $db->query("ALTER TABLE orders ADD CONSTRAINT fk_orders_user     FOREIGN KEY (user_id)     REFERENCES users(user_id)           ON DELETE SET NULL");
     if ($db->errno) return;
     $db->query("ALTER TABLE orders ADD CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES customers(customer_id)   ON DELETE SET NULL");
@@ -443,47 +443,47 @@ _migrate($conn, 'add_missing_fks_v1', function($db) {
     $db->query("ALTER TABLE orders ADD CONSTRAINT fk_orders_employee FOREIGN KEY (employee_id) REFERENCES employees(employee_id)   ON DELETE SET NULL");
     if ($db->errno) return;
 
-    // employees → users (nullable → SET NULL)
+    // employees â†’ users (nullable â†’ SET NULL)
     $db->query("ALTER TABLE employees ADD CONSTRAINT fk_employees_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE SET NULL");
     if ($db->errno) return;
 
-    // attendance → users (NOT NULL → RESTRICT so records are preserved)
+    // attendance â†’ users (NOT NULL â†’ RESTRICT so records are preserved)
     $db->query("ALTER TABLE attendance ADD CONSTRAINT fk_attendance_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE RESTRICT");
     if ($db->errno) return;
 
-    // announcement_reads → users + announcements (CASCADE: delete reads when parent goes)
+    // announcement_reads â†’ users + announcements (CASCADE: delete reads when parent goes)
     $db->query("ALTER TABLE announcement_reads ADD CONSTRAINT fk_ar_user         FOREIGN KEY (user_id)         REFERENCES users(user_id)   ON DELETE CASCADE");
     if ($db->errno) return;
     $db->query("ALTER TABLE announcement_reads ADD CONSTRAINT fk_ar_announcement FOREIGN KEY (announcement_id) REFERENCES announcements(id) ON DELETE CASCADE");
     if ($db->errno) return;
 
-    // cash_counts → users (RESTRICT: keep financial history)
+    // cash_counts â†’ users (RESTRICT: keep financial history)
     $db->query("ALTER TABLE cash_counts ADD CONSTRAINT fk_cr_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE RESTRICT");
     if ($db->errno) return;
 
-    // ingredients → suppliers (nullable → SET NULL when supplier deleted)
+    // ingredients â†’ suppliers (nullable â†’ SET NULL when supplier deleted)
     $db->query("ALTER TABLE ingredients ADD CONSTRAINT fk_ingredients_supplier FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id) ON DELETE SET NULL");
     if ($db->errno) return;
 
-    // ingredient_daily_stock → ingredients (CASCADE: stock rows belong to ingredient)
+    // ingredient_daily_stock â†’ ingredients (CASCADE: stock rows belong to ingredient)
     $db->query("ALTER TABLE ingredient_daily_stock ADD CONSTRAINT fk_ids_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id) ON DELETE CASCADE");
     if ($db->errno) return;
 
-    // ingredient_history → ingredients (RESTRICT) + orders (nullable → SET NULL)
+    // ingredient_history â†’ ingredients (RESTRICT) + orders (nullable â†’ SET NULL)
     $db->query("ALTER TABLE ingredient_history ADD CONSTRAINT fk_ih_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id) ON DELETE RESTRICT");
     if ($db->errno) return;
     $db->query("ALTER TABLE ingredient_history ADD CONSTRAINT fk_ih_order FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE SET NULL");
     if ($db->errno) return;
 
-    // order_remakes → orders (CASCADE: remakes belong to the order)
+    // order_remakes â†’ orders (CASCADE: remakes belong to the order)
     $db->query("ALTER TABLE order_remakes ADD CONSTRAINT fk_or_order FOREIGN KEY (order_id) REFERENCES orders(order_id) ON DELETE CASCADE");
     if ($db->errno) return;
 
-    // stock_refills → ingredients (RESTRICT: keep refill history)
+    // stock_refills â†’ ingredients (RESTRICT: keep refill history)
     $db->query("ALTER TABLE stock_refills ADD CONSTRAINT fk_sr_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id) ON DELETE RESTRICT");
 });
 
-// ── Add category_id FK to products (categories table already exists) ──
+// â”€â”€ Add category_id FK to products (categories table already exists) â”€â”€
 _migrate($conn, 'products_category_fk_v1', function($db) {
     _add_col($db, 'products', 'category_id', 'INT NULL');
     if ($db->errno) return;
@@ -493,7 +493,7 @@ _migrate($conn, 'products_category_fk_v1', function($db) {
     $db->query("ALTER TABLE products ADD CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE SET NULL");
 });
 
-// ── Rename cash_reconciliations → cash_counts (legacy installs only) ──
+// â”€â”€ Rename cash_reconciliations â†’ cash_counts (legacy installs only) â”€â”€
 _migrate($conn, 'rename_cash_reconciliations_to_cash_counts_v1', function($db) {
     // Only rename when the old table still exists and the new one doesn't.
     // Fresh installs already create cash_counts directly above, so this is a no-op there.
@@ -504,7 +504,7 @@ _migrate($conn, 'rename_cash_reconciliations_to_cash_counts_v1', function($db) {
     }
 });
 
-// ── Drop the zombie cash_reconciliations table ──
+// â”€â”€ Drop the zombie cash_reconciliations table â”€â”€
 // A stale CREATE used to recreate it (empty) on every page load after the rename
 // above had already moved real data to cash_counts. The CREATE now targets
 // cash_counts, so this one-time drop sticks. Safe: no code writes the old table.
@@ -512,18 +512,18 @@ _migrate($conn, 'drop_zombie_cash_reconciliations_v1', function($db) {
     $db->query("DROP TABLE IF EXISTS cash_reconciliations");
 });
 
-// ── Rename permission display name ──
+// â”€â”€ Rename permission display name â”€â”€
 _migrate($conn, 'rename_permission_cash_reconciliation_to_cash_count_v1', function($db) {
     $db->query("UPDATE permissions SET name = 'Cash Count' WHERE slug = 'cash_reconciliation'");
 });
 
-// ── Remove test permission ──
+// â”€â”€ Remove test permission â”€â”€
 _migrate($conn, 'delete_test_permission_only_sigma_boy_v3', function($db) {
     $db->query("DELETE FROM permissions WHERE name = 'OnlySigmaBoy' OR slug IN ('only_sigma_boy','onlysigmaboy')");
     $db->query("DELETE FROM role_permissions WHERE permission_id NOT IN (SELECT id FROM permissions)");
 });
 
-// ── Stock Count: tables + permission + role grants ──
+// â”€â”€ Stock Count: tables + permission + role grants â”€â”€
 _migrate($conn, 'stock_count_v1', function($db) {
     $db->query("CREATE TABLE IF NOT EXISTS stock_counts (
         count_id      INT AUTO_INCREMENT PRIMARY KEY,
@@ -568,10 +568,10 @@ _migrate($conn, 'stock_count_module_fix_v2', function($db) {
     $db->query("UPDATE permissions SET module='Reconciliation' WHERE slug IN ('stock_count','cash_reconciliation')");
 });
 
-// ── Re-grant barista_station via role_id ──
+// â”€â”€ Re-grant barista_station via role_id â”€â”€
 // The legacy rbac_barista_station_recon_v1 inserted into a `role` (slug) column
 // that was later dropped in favour of role_id, so those grants silently failed
-// and NO role actually held barista_station — only admin (can() bypass) could
+// and NO role actually held barista_station â€” only admin (can() bypass) could
 // reach barista_display.php. Re-grant to the operational roles using role_id.
 // admin bypasses can(), so it does not need an explicit row.
 _migrate($conn, 'rbac_barista_station_roleid_v1', function($db) {
@@ -582,7 +582,7 @@ _migrate($conn, 'rbac_barista_station_roleid_v1', function($db) {
     }
 });
 
-// ── Drink sizes: products.has_sizes, product_sizes table, order_items size columns ──
+// â”€â”€ Drink sizes: products.has_sizes, product_sizes table, order_items size columns â”€â”€
 _migrate($conn, 'drink_sizes_v1', function($db) {
     _add_col($db, 'products', 'has_sizes', 'TINYINT(1) NOT NULL DEFAULT 0');
     if ($db->errno) return;
@@ -606,15 +606,132 @@ _migrate($conn, 'drink_sizes_v1', function($db) {
     _add_col($db, 'order_items', 'size_label', 'VARCHAR(20) NULL');
 });
 
-// ── Loyalty history: widen type ENUM so adjustment rows store correctly ──
+// â”€â”€ Loyalty history: widen type ENUM so adjustment rows store correctly â”€â”€
 // Code writes 'adjusted_add'/'adjusted_deduct' (cancel reversal, order-edit point sync).
-// The original ENUM lacked them → on strict-mode MySQL those INSERTs fail; on lax mode
+// The original ENUM lacked them â†’ on strict-mode MySQL those INSERTs fail; on lax mode
 // they silently stored ''. Add the values so every loyalty path records accurately.
 _migrate($conn, 'loyalty_history_type_enum_v1', function($db) {
     $db->query("ALTER TABLE loyalty_history MODIFY COLUMN type ENUM('earned','redeemed','bonus','created','adjusted_add','adjusted_deduct') NOT NULL");
 });
 
-// ── SANITIZE FUNCTION ──
+// â”€â”€ Add image column to categories + permission â”€â”€
+_migrate($conn, 'categories_image_v2', function($db) {
+    $has = $db->query("SHOW COLUMNS FROM categories LIKE 'image'")->num_rows > 0;
+    if (!$has) $db->query("ALTER TABLE categories ADD image VARCHAR(255) DEFAULT NULL AFTER icon");
+    $db->query("INSERT IGNORE INTO permissions (name, slug, module, sort_order) VALUES ('Categories', 'categories', 'Inventory', 13)");
+    foreach (['admin','manager','inventory_clerk'] as $role) {
+        $db->query("INSERT IGNORE INTO role_permissions (role_id, permission_id)
+            SELECT r.id, p.id FROM roles r, permissions p
+            WHERE r.slug='$role' AND p.slug='categories'");
+    }
+});
+
+// â”€â”€ SANITIZE FUNCTION â”€â”€
+
+// ---- Size / Ice / Sugar levels ----
+_migrate($conn, 'customize_levels_v1', function($db) {
+    $db->query("CREATE TABLE IF NOT EXISTS size_levels (
+        id            INT(11) NOT NULL AUTO_INCREMENT,
+        name          VARCHAR(50) NOT NULL,
+        display_order INT(11) NOT NULL DEFAULT 0,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    if ($db->errno) return;
+    $db->query("INSERT IGNORE INTO size_levels (id, name, display_order) VALUES (1, 'Small', 1), (2, 'Medium', 2), (3, 'Large', 3)");
+
+    $db->query("CREATE TABLE IF NOT EXISTS ice_levels (
+        id            INT(11) NOT NULL AUTO_INCREMENT,
+        name          VARCHAR(50) NOT NULL,
+        display_order INT(11) NOT NULL DEFAULT 0,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    if ($db->errno) return;
+
+    $db->query("CREATE TABLE IF NOT EXISTS sugar_levels (
+        id            INT(11) NOT NULL AUTO_INCREMENT,
+        name          VARCHAR(50) NOT NULL,
+        display_order INT(11) NOT NULL DEFAULT 0,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    if ($db->errno) return;
+
+    $db->query("INSERT IGNORE INTO permissions (name, slug, module, sort_order) VALUES ('Customize Levels', 'manage_levels', 'Inventory', 19)");
+    foreach (['admin','manager'] as $role) {
+        $db->query("INSERT IGNORE INTO role_permissions (role_id, permission_id)
+            SELECT r.id, p.id FROM roles r, permissions p
+            WHERE r.slug='$role' AND p.slug='manage_levels'");
+    }
+});
+
+// ---- Default size levels seed ----
+_migrate($conn, 'size_levels_seed_v1', function($db) {
+    $db->query("INSERT IGNORE INTO size_levels (id, name, display_order) VALUES (1, 'Small', 1), (2, 'Medium', 2), (3, 'Large', 3)");
+});
+
+// ---- Product ice/sugar level columns ----
+_migrate($conn, 'product_levels_v1', function($db) {
+    if (!$db->query("SHOW COLUMNS FROM products LIKE 'ice_level_id'")->num_rows) {
+        $db->query("ALTER TABLE products ADD ice_level_id INT(11) DEFAULT NULL AFTER has_sizes");
+        $db->query("ALTER TABLE products ADD sugar_level_id INT(11) DEFAULT NULL AFTER ice_level_id");
+    }
+});
+
+// ---- Product ice/sugar level pivot tables (many-to-many) ----
+_migrate($conn, 'product_levels_pivot_v1', function($db) {
+    $db->query("CREATE TABLE IF NOT EXISTS product_ice_levels (
+        product_id INT(11) NOT NULL,
+        ice_level_id INT(11) NOT NULL,
+        PRIMARY KEY (product_id, ice_level_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    $db->query("CREATE TABLE IF NOT EXISTS product_sugar_levels (
+        product_id INT(11) NOT NULL,
+        sugar_level_id INT(11) NOT NULL,
+        PRIMARY KEY (product_id, sugar_level_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+    if ($db->query("SHOW COLUMNS FROM products LIKE 'ice_level_id'")->num_rows) {
+        $db->query("ALTER TABLE products DROP COLUMN ice_level_id");
+        $db->query("ALTER TABLE products DROP COLUMN sugar_level_id");
+    }
+});
+
+// ---- Link product_sizes to size_levels ----
+_migrate($conn, 'product_sizes_level_id_v1', function($db) {
+    if (!$db->query("SHOW COLUMNS FROM product_sizes LIKE 'size_level_id'")->num_rows) {
+        $db->query("ALTER TABLE product_sizes ADD size_level_id INT(11) DEFAULT NULL AFTER product_id");
+        $db->query("UPDATE product_sizes SET size_level_id = CASE size_code WHEN 'S' THEN 1 WHEN 'M' THEN 2 WHEN 'L' THEN 3 END WHERE size_code IN ('S','M','L')");
+    }
+});
+
+// ---- Milk levels ----
+_migrate($conn, 'milk_levels_v1', function($db) {
+    $db->query("CREATE TABLE IF NOT EXISTS milk_levels (
+        id            INT(11) NOT NULL AUTO_INCREMENT,
+        name          VARCHAR(50) NOT NULL,
+        display_order INT(11) NOT NULL DEFAULT 0,
+        PRIMARY KEY (id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    if ($db->errno) return;
+    $db->query("INSERT IGNORE INTO milk_levels (id, name, display_order) VALUES (1, 'Fresh Milk', 1), (2, 'Almond Milk', 2), (3, 'Soy Milk', 3), (4, 'Oat Milk', 4)");
+});
+
+// ---- Product milk level pivot table ----
+_migrate($conn, 'product_milk_pivot_v1', function($db) {
+    $db->query("CREATE TABLE IF NOT EXISTS product_milk_levels (
+        product_id INT(11) NOT NULL,
+        milk_level_id INT(11) NOT NULL,
+        PRIMARY KEY (product_id, milk_level_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+});
+
+// ---- Sugar column on order_items ----
+_migrate($conn, 'order_items_sugar_v1', function($db) {
+    if (!$db->query("SHOW COLUMNS FROM order_items LIKE 'sugar'")->num_rows) {
+        $db->query("ALTER TABLE order_items ADD sugar VARCHAR(50) DEFAULT NULL AFTER ice");
+    }
+});
+
 if (!function_exists('sanitizeForReceipt')) {
     function sanitizeForReceipt(string $text): string {
         $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
@@ -624,7 +741,7 @@ if (!function_exists('sanitizeForReceipt')) {
     }
 }
 
-// ── LOYALTY SYSTEM FUNCTIONS ──
+// â”€â”€ LOYALTY SYSTEM FUNCTIONS â”€â”€
 
 if (!function_exists('generateLoyaltyId')) {
     function generateLoyaltyId() {
@@ -666,7 +783,7 @@ if (!function_exists('getAvailableRewards')) {
     }
 }
 
-// ── RBAC: can() — check if current session role has a permission ──
+// â”€â”€ RBAC: can() â€” check if current session role has a permission â”€â”€
 if (!function_exists('can')) {
     function can(string $slug): bool {
         global $conn;
@@ -686,6 +803,77 @@ if (!function_exists('can')) {
             }
         }
         return $is_admin || isset($perms[$slug]);
+    }
+}
+
+// â”€â”€ Strip CSS rules that conflict with the dashboard layout â”€â”€
+if (!function_exists('clean_embed_styles')) {
+    function clean_embed_styles(string $css): string {
+        // Remove CSS comments
+        $css = preg_replace('/\/\*.*?\*\//s', '', $css);
+        // Build a list of selectors to entirely remove
+        $kill = [
+            '*', 'html', 'body',
+            '.sidebar', '.sidebar-header', '.sidebar-nav',
+            '.nav-group-label', '.nav-group-items', '.nav-item',
+            '.main',
+        ];
+        // Remove simple rules: selector { ... } â€” these never nest
+        foreach ($kill as $sel) {
+            $esc = preg_quote($sel, '/');
+            $css = preg_replace('/' . $esc . '\s*\{[^}]*\}/i', '', $css);
+        }
+        // Remove entire @media blocks that reference a killed selector.
+        // CSS @media rules only nest one level deep, so handle that.
+        $css = preg_replace_callback('/@media[^{]*\{(?:[^{}]|\{[^{}]*\})*\}/s', function ($m) {
+            $kill_re = '/(sidebar|nav-item|nav-group|nav-label|\.main|\bbody\b)/i';
+            return preg_match($kill_re, $m[0]) ? '' : $m[0];
+        }, $css);
+        // Clean up empty rules and extra whitespace
+        $css = preg_replace('/[^},]\s*\{\s*\}/', '', $css);
+        $css = preg_replace('/\n{2,}/', "\n", $css);
+        return trim($css);
+    }
+}
+
+// â”€â”€ AJAX embed mode helpers â”€â”€
+if (!function_exists('start_embed')) {
+    function start_embed(): bool {
+        $embed = isset($_GET['embed']);
+        if ($embed) ob_start();
+        return $embed;
+    }
+}
+if (!function_exists('end_embed')) {
+    function end_embed(): void {
+        if (isset($_GET['embed'])) {
+            $html = ob_get_clean();
+            // Extract <style> blocks from <head>
+            $styles = '';
+            if (preg_match_all('/<style[^>]*>(.*?)<\/style>/is', $html, $m)) {
+                foreach ($m[1] as $s) {
+                    // :root kept as-is so [data-theme="light"] cascade works correctly
+                    $s = clean_embed_styles($s);
+                    if (trim($s)) $styles .= '<style>' . $s . '</style>' . "\n";
+                }
+            }
+            // Extract everything after <body> (</body> was stripped when we replaced </body></html> with end_embed())
+            $start = strpos($html, '<body');
+            $body  = '';
+            if ($start !== false) {
+                $start = strpos($html, '>', $start) + 1;
+                $end = strrpos($html, '</body>');
+                if ($end === false) {
+                    $body = rtrim(substr($html, $start));
+                } else {
+                    $body = substr($html, $start, $end - $start);
+                }
+            }
+            echo $styles . $body;
+            return;
+        }
+        // Non-embed: close the tags (the page's own </body></html> was replaced with this call)
+        echo '</body></html>';
     }
 }
 ?>
