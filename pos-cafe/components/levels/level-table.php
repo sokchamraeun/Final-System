@@ -24,25 +24,25 @@ $canManage = $canManage ?? false;
 
 <?php else: ?>
 
-<div class="overflow-hidden rounded-3xl bg-white shadow-lg ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+<div class="overflow-hidden rounded-3xl border border-amber-100 bg-white shadow-sm dark:border-amber-900/30 dark:bg-slate-900">
 
-    <table class="w-full border-separate border-spacing-y-3 px-4">
+    <table class="w-full border-collapse">
         <thead>
-            <tr>
-                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
-                    ID
+            <tr class="border-b border-amber-100 bg-amber-50/60 dark:border-amber-900/30 dark:bg-amber-500/10">
+                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                    #ID
                 </th>
 
-                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
+                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
                     Level Name
                 </th>
 
-                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
+                <th class="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
                     Display Order
                 </th>
 
                 <?php if ($canManage): ?>
-                <th class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-500">
+                <th class="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
                     Actions
                 </th>
                 <?php endif; ?>
@@ -53,68 +53,50 @@ $canManage = $canManage ?? false;
 
         <?php foreach ($rows as $r): ?>
 
-            <tr class="rounded-2xl bg-slate-50 transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:shadow-lg dark:bg-slate-800 dark:hover:bg-slate-700">
+            <tr class="border-b border-slate-100 transition hover:bg-amber-50/40 dark:border-slate-800 dark:hover:bg-amber-500/5">
 
                 <td class="px-6 py-5">
-                    <span class="rounded-full bg-slate-200 px-3 py-1 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-white">
-                        #<?= (int)$r['id'] ?>
+                    <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-xs font-bold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
+                        <?= str_pad((string)(int)$r['id'], 2, '0', STR_PAD_LEFT) ?>
                     </span>
                 </td>
 
                 <td class="px-6 py-5">
-                    <div class="flex items-center gap-3">
-
-                        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-500/20">
-                            <i class="fa-solid fa-layer-group text-amber-600"></i>
-                        </div>
-
-                        <div>
-
-                            <div class="font-semibold text-slate-800 dark:text-white">
-                                <?= e($r['name']) ?>
-                            </div>
-
-                            <div class="text-xs text-slate-400">
-                                Product Level
-                            </div>
-
-                        </div>
-
+                    <div class="font-semibold text-slate-800 dark:text-white">
+                        <?= e($r['name']) ?>
                     </div>
                 </td>
 
                 <td class="px-6 py-5">
-
-                    <span class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-500/20 dark:text-blue-300">
+                    <span class="inline-flex rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700 dark:bg-orange-500/20 dark:text-orange-300">
                         <?= (int)$r['display_order'] ?>
                     </span>
-
                 </td>
 
                 <?php if ($canManage): ?>
 
-                <td class="px-6 py-5 text-right">
+                <td class="px-6 py-5">
 
-                    <div class="flex justify-end gap-2">
+                    <div class="inline-flex items-center gap-0.5 rounded-full border border-amber-100 bg-amber-50/60 p-1 shadow-sm dark:border-amber-900/30 dark:bg-amber-500/10 float-right">
 
                         <a
                             href="<?= e(url('pages/levels/edit.php?type='.$type.'&id='.(int)$r['id'])) ?>"
-                            class="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-amber-600">
+                            title="Edit"
+                            class="group flex h-8 w-8 items-center justify-center rounded-full text-amber-600 transition duration-200 hover:bg-amber-500 hover:text-white hover:shadow-md hover:shadow-amber-500/40 active:scale-90 dark:text-amber-400">
 
-                            <i class="fa-solid fa-pen"></i>
-
-                            Edit
+                            <i class="fa-solid fa-pen text-xs transition-transform duration-200 group-hover:rotate-6"></i>
 
                         </a>
+
+                        <span class="h-4 w-px bg-amber-200 dark:bg-amber-800"></span>
 
                         <button
                             type="button"
                             onclick="confirmDeleteLevel(<?= (int)$r['id'] ?>, <?= e(json_encode($r['name'])) ?>)"
-                            class="inline-flex items-center gap-2 rounded-xl bg-red-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-red-600">
+                            title="Delete"
+                            class="group flex h-8 w-8 items-center justify-center rounded-full text-red-500 transition duration-200 hover:bg-red-500 hover:text-white hover:shadow-md hover:shadow-red-500/40 active:scale-90">
 
-                            <i class="fa-solid fa-trash"></i>
-
-                            Delete
+                            <i class="fa-solid fa-trash text-xs transition-transform duration-200 group-hover:scale-110"></i>
 
                         </button>
 

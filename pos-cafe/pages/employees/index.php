@@ -27,7 +27,7 @@ $baseUrl = url('pages/employees/index.php?search=' . urlencode($search));
 component('layout/header', ['pageTitle' => $pageTitle, 'pageSubtitle' => $pageSubtitle]);
 component('layout/main',   ['title' => 'Employees', 'crumbs' => ['HR', 'Employees'], 'actions' => $actions]);
 component('employees/employee-search', ['search' => $search]);
-component('employees/employee-table', ['rows' => $result['rows'], 'canManage' => $canManage]);
+component('employees/employee-table', ['rows' => $result['rows'], 'canManage' => $canManage, 'page' => $page, 'perPage' => PER_PAGE]);
 component('common/pagination', ['page' => $page, 'perPage' => PER_PAGE, 'total' => $result['total'], 'baseUrl' => $baseUrl]);
 
 if ($canManage):

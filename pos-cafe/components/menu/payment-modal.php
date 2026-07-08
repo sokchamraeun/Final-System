@@ -7,9 +7,13 @@ $add_to_order_mode = $add_to_order_mode ?? 0;
       <h3><i class="fa-solid fa-credit-card" style="color:var(--orange, #14b8a6);"></i> Payment</h3>
       <button type="button" class="cp-paymodal-close" id="cpPayModalClose" onclick="cpClosePayModal()"><i class="fa-solid fa-xmark"></i></button>
     </div>
+    <div class="cp-pm-items" id="cpPmItems"></div>
+
     <div class="cp-pm-breakdown">
       <div class="cp-pm-row"><span>Subtotal</span><span id="cpPmSubtotal">$0.00</span></div>
-      <div class="cp-pm-row"><span>Tax (<?= (int)TAX_RATE ?>%)</span><span id="cpPmTax">$0.00</span></div>
+      <?php if ((float)TAX_RATE > 0): ?>
+      <div class="cp-pm-row" id="cpPmTaxRow"><span>Tax (<?= (int)TAX_RATE ?>%)</span><span id="cpPmTax">$0.00</span></div>
+      <?php endif; ?>
     </div>
     <div class="cp-pm-hero">
       <span class="cp-pm-hero-label">Total due</span>
@@ -69,5 +73,40 @@ $add_to_order_mode = $add_to_order_mode ?? 0;
     <button type="button" class="cp-pm-confirm" id="cpConfirmPayBtn">
       <i class="fa-solid fa-check" id="cpConfirmPayIcon"></i> <span id="cpConfirmPayText">Confirm Payment</span>
     </button>
+  </div>
+</div>
+
+<!-- Receipt Modal -->
+<div id="cpReceiptModal" class="cp-receipt-modal">
+  <div class="cp-receipt-card">
+    <div class="cp-receipt-head">
+      <h3><i class="fa-solid fa-receipt" style="color:var(--orange,#14b8a6);"></i> Order Receipt</h3>
+      <button type="button" class="cp-receipt-close" onclick="cpCloseReceipt()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="cp-receipt-body" id="cpReceiptBody">
+      <div class="cp-receipt-shop">
+        <div class="cp-receipt-name">The Bird Nest Cafe</div>
+        <div class="cp-receipt-info">Phnom Penh, Cambodia</div>
+      </div>
+      <div class="cp-receipt-divider"></div>
+      <div class="cp-receipt-header">
+        <div class="cp-receipt-field"><span class="cp-rf-label">Receipt #</span><span class="cp-rf-value" id="cpRcptNo">-</span></div>
+        <div class="cp-receipt-field"><span class="cp-rf-label">Status</span><span class="cp-rf-value cp-rf-badge" id="cpRcptStatus">-</span></div>
+        <div class="cp-receipt-field"><span class="cp-rf-label">Customer</span><span class="cp-rf-value" id="cpRcptCustomer">-</span></div>
+        <div class="cp-receipt-field"><span class="cp-rf-label">Cashier</span><span class="cp-rf-value" id="cpRcptCashier">-</span></div>
+        <div class="cp-receipt-field"><span class="cp-rf-label">Type</span><span class="cp-rf-value" id="cpRcptType">-</span></div>
+        <div class="cp-receipt-field" id="cpRcptTableRow" style="display:none"><span class="cp-rf-label">Table</span><span class="cp-rf-value" id="cpRcptTable">-</span></div>
+      </div>
+      <div class="cp-receipt-divider"></div>
+      <div class="cp-receipt-items" id="cpRcptItems"></div>
+      <div class="cp-receipt-divider"></div>
+      <div class="cp-receipt-totals" id="cpRcptTotals"></div>
+      <div class="cp-receipt-payments" id="cpRcptPayments"></div>
+    </div>
+    <div class="cp-receipt-actions" id="cpReceiptActions">
+      <button type="button" class="cp-receipt-btn cp-receipt-btn-print" onclick="cpPrintReceipt()"><i class="fa-solid fa-print"></i> Print</button>
+      <button type="button" class="cp-receipt-btn cp-receipt-btn-cancel" id="cpBtnCancelOrder" style="display:none" onclick="cpCancelAndContinue()"><i class="fa-solid fa-ban"></i> Cancel & Continue</button>
+      <button type="button" class="cp-receipt-btn cp-receipt-btn-new" onclick="cpNewOrder()"><i class="fa-solid fa-plus"></i> New Order</button>
+    </div>
   </div>
 </div>

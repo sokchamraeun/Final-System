@@ -10,6 +10,8 @@ $sizesByProduct = $sizesByProduct ?? [];
 $iceByProduct   = $iceByProduct   ?? [];
 $sugarByProduct = $sugarByProduct ?? [];
 $search_term = $search_term ?? '';
+$promo_products = $promo_products ?? [];
+$top_sellers = $top_sellers ?? [];
 
 if (!function_exists('cat_anchor_id')) {
     function cat_anchor_id($key) {
@@ -32,6 +34,23 @@ if (!function_exists('cat_anchor_id')) {
     <?php endforeach; ?>
   </div>
 <?php elseif (!empty($products)): ?>
+  <div id="cat-all" style="height:1px;margin-top:-1px;"></div>
+  <?php if (!empty($promo_products)): ?>
+  <section class="cat-section" id="cat-promotions">
+    <div class="cat-header">
+      <div class="cat-icon"><i class="fa-solid fa-tags"></i></div>
+      <div class="cat-title-text">
+        <h2>Promotions</h2>
+        <span><?= count($promo_products) ?> item<?= count($promo_products)!==1?'s':'' ?></span>
+      </div>
+    </div>
+    <div class="product-grid">
+    <?php foreach ($promo_products as $p): ?>
+      <?php $P = $p; component('menu/product-card', ['p' => $P, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct]) ?>
+    <?php endforeach; ?>
+    </div>
+  </section>
+  <?php endif; ?>
   <?php foreach ($categories as $key => $label):
     if (empty($products[$key])) continue;
     $anchor = cat_anchor_id($key);

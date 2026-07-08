@@ -28,6 +28,7 @@ try {
             'milk'      => (string) input('milk', ''),
             'sugar'     => (string) input('sugar', ''),
             'size'      => (string) input('size', ''),
+            'addons'    => (string) input('addons', ''),
         ]
     );
 } catch (CartException $e) {

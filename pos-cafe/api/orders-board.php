@@ -53,6 +53,7 @@ switch ($action) {
                 orr.refund_reason,
                 orr.refunded_by,
                 (SELECT GROUP_CONCAT(reason ORDER BY remade_at ASC SEPARATOR '|||') FROM order_remakes rml WHERE rml.order_id = o.order_id) AS remake_reasons,
+                (SELECT COUNT(*) FROM order_payments op2 WHERE op2.order_id = o.order_id AND op2.payment_status = 'paid') AS has_paid_payment,
                 oi.item_id,
                 oi.product_name,
                 oi.sweetness,
@@ -71,16 +72,7 @@ switch ($action) {
             LEFT JOIN order_refunds orr ON orr.order_id = o.order_id
             WHERE o.business_date = ?
             GROUP BY o.order_id, oi.item_id, oi.product_name, oi.sweetness, oi.ice, oi.milk, oi.size_label, oi.quantity
-            ORDER BY
-                CASE o.status
-                    WHEN 'PendingPayment' THEN 1
-                    WHEN 'Paid' THEN 2
-                    WHEN 'Preparing' THEN 3
-                    WHEN 'Completed' THEN 4
-                    WHEN 'Cancelled' THEN 5
-                    WHEN 'Refunded' THEN 6
-                END,
-                o.order_id ASC
+            ORDER BY o.order_id DESC
         ");
 
         $stmt->bind_param('s', $business_date);
@@ -100,7 +92,7 @@ switch ($action) {
                     'total' => $r['total'],
                     'status' => $r['status'],
                     'payment_method' => $r['payment_method'] ?? '',
-                    'payment_status' => $r['status'] === 'PendingPayment' ? 'unpaid' : 'paid',
+                    'payment_status' => ((int)($r['has_paid_payment'] ?? 0) > 0) ? 'paid' : 'unpaid',
                     'order_date' => $r['order_date'],
                     'token_number' => $r['token_number'],
                     'employee_id' => $r['employee_id'],
@@ -154,16 +146,30 @@ switch ($action) {
             json_response(['ok' => 0, 'error' => 'Invalid order id']);
         }
 
+        $method = (string) input('method', 'cash');
+        $allowed = ['cash', 'bakong', 'riel', 'paylater'];
+        if (!in_array($method, $allowed)) $method = 'cash';
+
         $conn->begin_transaction();
         try {
-            $s1 = $conn->prepare("UPDATE orders SET status = 'Preparing' WHERE order_id = ?");
-            $s1->bind_param('i', $order_id);
+            $s1 = $conn->prepare("UPDATE orders SET status = 'Preparing', payment_method = ? WHERE order_id = ?");
+            $s1->bind_param('si', $method, $order_id);
             $s1->execute();
 
-            // Sync any pending payment records so order_payments stays consistent
-            $s2 = $conn->prepare("UPDATE order_payments SET payment_status = 'paid' WHERE order_id = ? AND payment_status != 'paid'");
-            $s2->bind_param('i', $order_id);
-            $s2->execute();
+            // Upsert order_payments record
+            $s3 = $conn->prepare("SELECT payment_id FROM order_payments WHERE order_id = ? LIMIT 1");
+            $s3->bind_param('i', $order_id);
+            $s3->execute();
+            $_pay_existing = $s3->get_result()->fetch_assoc();
+
+            if ($_pay_existing) {
+                $s4 = $conn->prepare("UPDATE order_payments SET payment_method = ?, payment_status = 'paid' WHERE order_id = ?");
+                $s4->bind_param('si', $method, $order_id);
+            } else {
+                $s4 = $conn->prepare("INSERT INTO order_payments (order_id, payment_method, amount, payment_status, paid_at) VALUES (?, ?, 0, 'paid', NOW())");
+                $s4->bind_param('si', $order_id, $method);
+            }
+            $s4->execute();
 
             $conn->commit();
             json_response(['ok' => 1]);
@@ -179,13 +185,28 @@ switch ($action) {
             json_response(['ok' => 0, 'error' => 'Invalid order id']);
         }
 
-        $stmt = $conn->prepare("UPDATE orders SET status = 'Preparing' WHERE order_id = ?");
-        $stmt->bind_param('i', $order_id);
+        $conn->begin_transaction();
+        try {
+            $stmt = $conn->prepare("UPDATE orders SET status = 'Preparing', payment_method = COALESCE(NULLIF(payment_method, ''), 'paylater') WHERE order_id = ?");
+            $stmt->bind_param('i', $order_id);
+            $stmt->execute();
 
-        if ($stmt->execute()) {
+            // Create a pending payment record so order stays unpaid
+            $sp = $conn->prepare("SELECT payment_id FROM order_payments WHERE order_id = ? AND payment_method = 'paylater' LIMIT 1");
+            $sp->bind_param('i', $order_id);
+            $sp->execute();
+            if (!$sp->get_result()->fetch_assoc()) {
+                $si = $conn->prepare("INSERT INTO order_payments (order_id, payment_method, amount, payment_status) VALUES (?, 'paylater', 0, 'pending')");
+                $si->bind_param('i', $order_id);
+                $si->execute();
+            }
+
+            $conn->commit();
             json_response(['ok' => 1]);
+        } catch (Exception $e) {
+            $conn->rollback();
+            json_response(['ok' => 0, 'error' => $e->getMessage()]);
         }
-        json_response(['ok' => 0, 'error' => 'Failed to update status']);
         // no break — json_response exits
 
     case 'complete':
@@ -255,6 +276,76 @@ switch ($action) {
         } catch (Exception $e) {
             $conn->rollback();
             json_response(['ok' => 0, 'error' => $e->getMessage()]);
+        }
+        // no break — json_response exits
+
+    case 'gen_bakong_qr':
+        $order_id = (int) input('id', 0);
+        if ($order_id <= 0) {
+            json_response(['ok' => 0, 'error' => 'Invalid order id']);
+        }
+
+        $oq = $conn->prepare("SELECT order_id, total FROM orders WHERE order_id = ?");
+        $oq->bind_param('i', $order_id);
+        $oq->execute();
+        $order = $oq->get_result()->fetch_assoc();
+        if (!$order) {
+            json_response(['ok' => 0, 'error' => 'Order not found']);
+        }
+
+        $amount = (float) $order['total'];
+        if ($amount <= 0) {
+            json_response(['ok' => 0, 'error' => 'Invalid amount']);
+        }
+
+        try {
+            require __DIR__ . '/../../bakong-khqr-php-main/vendor/autoload.php';
+            $bakCfg = require __DIR__ . '/../../bakong_config.php';
+            $bi = new \KHQR\Models\IndividualInfo(
+                bakongAccountID: $bakCfg['bakong_id'],
+                merchantName: $bakCfg['merchant_name'],
+                merchantCity: $bakCfg['merchant_city'],
+                currency: $bakCfg['currency'],
+                amount: $amount,
+                billNumber: 'ORDER_' . $order_id,
+                storeLabel: 'ObsidianCafe',
+                terminalLabel: 'POS1',
+                mobileNumber: $bakCfg['mobile_number'],
+                expirationTimestamp: strval((time() + 15 * 60) * 1000)
+            );
+            $bakResp = \KHQR\BakongKHQR::generateIndividual($bi);
+            if (($bakResp->status['code'] ?? 1) === 0 && !empty($bakResp->data['qr']) && !empty($bakResp->data['md5'])) {
+                $qrString = $bakResp->data['qr'];
+                $qrMd5    = $bakResp->data['md5'];
+                $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' . urlencode($qrString);
+
+                $conn->begin_transaction();
+                try {
+                    $stmtM = $conn->prepare("UPDATE orders SET bakong_md5 = ? WHERE order_id = ?");
+                    $stmtM->bind_param("si", $qrMd5, $order_id);
+                    $stmtM->execute();
+
+                    // Ensure order_payments record exists for Bakong
+                    $sp = $conn->prepare("SELECT payment_id FROM order_payments WHERE order_id = ? AND payment_method = 'bakong' LIMIT 1");
+                    $sp->bind_param('i', $order_id);
+                    $sp->execute();
+                    if (!$sp->get_result()->fetch_assoc()) {
+                        $si = $conn->prepare("INSERT INTO order_payments (order_id, payment_method, amount, payment_status) VALUES (?, 'bakong', ?, 'pending')");
+                        $si->bind_param('id', $order_id, $amount);
+                        $si->execute();
+                    }
+
+                    $conn->commit();
+                    json_response(['ok' => 1, 'qr_url' => $qrUrl, 'md5' => $qrMd5]);
+                } catch (Exception $e) {
+                    $conn->rollback();
+                    json_response(['ok' => 0, 'error' => 'DB error: ' . $e->getMessage()]);
+                }
+            } else {
+                json_response(['ok' => 0, 'error' => 'QR generation failed']);
+            }
+        } catch (\Exception $e) {
+            json_response(['ok' => 0, 'error' => 'QR generation error: ' . $e->getMessage()]);
         }
         // no break — json_response exits
 

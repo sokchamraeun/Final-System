@@ -11,6 +11,7 @@ const BOARD_API  = <?= json_encode(url('api/orders-board.php')) ?>;
 const CANCEL_URL = <?= json_encode(url('cancel_order.php')) ?>;
 const REFUND_URL = <?= json_encode(url('refund_order.php')) ?>;
 const REMAKE_URL = <?= json_encode(url('remake_order.php')) ?>;
+const CHECK_PAYMENT_URL = <?= json_encode(url('pages/legacy/check_payment.php')) ?>;
 
 let currentCancelId = 0;
 let currentRefundId = 0;
@@ -94,8 +95,11 @@ function getActionButtonsHtml(o) {
     if (o.status === 'Paid' || o.status === 'Preparing') {
         buttons += `<button class="call-btn" onclick="callOrder(${Number(o.order_id)}, '${escapeHtml(o.customer_name)}', ${Number(o.daily_order_no)})"><i class="fa-solid fa-bell"></i> Call</button>`;
     }
+    if (o.payment_status === 'unpaid' && userRole !== 'barista') {
+        buttons += `<button class="paid-btn" onclick="showPaymentModal(${Number(o.order_id)}, ${Number(o.daily_order_no)})"><i class="fa-solid fa-credit-card"></i> Paid</button>`;
+    }
     if (o.status === 'PendingPayment' && userRole !== 'barista') {
-        buttons += `<button class="paid-btn" onclick="markPaid(${Number(o.order_id)})"><i class="fa-solid fa-credit-card"></i> Paid</button>`;
+        buttons += `<button class="open-btn" onclick="markPrepare(${Number(o.order_id)})"><i class="fa-solid fa-mug-hot"></i> Open</button>`;
     }
     if (o.status === 'Preparing') {
         buttons += `<button class="complete-btn" onclick="completeOrder(${Number(o.order_id)})"><i class="fa-solid fa-check"></i> Complete</button>`;
@@ -380,6 +384,134 @@ async function markPaid(id) {
     }
 }
 
+// ── Payment Method Modal ──
+let currentPayOrderId = 0;
+
+function selectPayMethod(el, method) {
+    document.querySelectorAll('.ob-pay-method').forEach(function(o) { o.classList.remove('selected'); });
+    el.classList.add('selected');
+    el.querySelector('input[type="radio"]').checked = true;
+}
+
+function showPaymentModal(id, orderNo) {
+    currentPayOrderId = id;
+    var o = allOrders.find(function(x) { return x.order_id == id; });
+    document.getElementById('payOrderNumber').textContent = '#' + orderNo;
+    // Build summary
+    var sumEl = document.getElementById('obPaySummary');
+    if (o && o.items && o.items.length) {
+        var total = parseFloat(o.total || 0);
+        var rows = o.items.map(function(i) {
+            return '<div class="pay-sum-row"><span class="pay-sum-name">' + escapeHtml(i.product_name) + ' <span class="pay-sum-qty">×' + Number(i.quantity) + '</span></span></div>';
+        }).join('');
+        sumEl.innerHTML = '<div class="pay-summary-inner">' + rows +
+            '<div class="pay-sum-total"><span>Total</span><span>$' + total.toFixed(2) + '</span></div></div>';
+    } else {
+        sumEl.innerHTML = '';
+    }
+    document.querySelectorAll('.ob-pay-method').forEach(function(o) { o.classList.remove('selected'); });
+    var first = document.querySelector('.ob-pay-method');
+    if (first) { first.classList.add('selected'); first.querySelector('input[type="radio"]').checked = true; }
+    document.getElementById('paymentModal').classList.add('active');
+}
+
+function closePaymentModal() {
+    if (obBakongInterval) { clearInterval(obBakongInterval); obBakongInterval = null; }
+    document.getElementById('paymentModal').classList.remove('active');
+    document.getElementById('obPayButtons').style.display = '';
+    document.getElementById('obQrDisplay').style.display = 'none';
+    document.getElementById('obQrStatus').style.color = '#f59e0b';
+    currentPayOrderId = 0;
+}
+
+let obBakongInterval = null;
+
+async function confirmPayment() {
+    var id = currentPayOrderId;
+    if (!id) return;
+    var selected = document.querySelector('.ob-pay-method.selected input[type="radio"]');
+    var method = selected ? selected.value : 'cash';
+
+    if (method === 'bakong') {
+        // Generate QR and show polling view
+        document.getElementById('obPayButtons').style.display = 'none';
+        document.getElementById('obQrDisplay').style.display = 'block';
+        document.getElementById('obQrStatus').textContent = 'Generating QR code...';
+
+        try {
+            var r = await fetch(BOARD_API + '?action=gen_bakong_qr&id=' + id, { cache: "no-store" });
+            var res = await r.json();
+            if (res.qr_url) {
+                document.getElementById('obQrImage').src = res.qr_url;
+                document.getElementById('obQrStatus').textContent = 'Waiting for payment...';
+                // Start polling
+                var _paid = false;
+                obBakongInterval = setInterval(function() {
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('GET', CHECK_PAYMENT_URL + '?order_id=' + id, true);
+                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+                    xhr.onload = function() {
+                        try {
+                            var d = JSON.parse(xhr.responseText);
+                            if (d.paid && !_paid) {
+                                _paid = true;
+                                clearInterval(obBakongInterval);
+                                obBakongInterval = null;
+                                document.getElementById('obQrStatus').textContent = '✅ Payment received!';
+                                document.getElementById('obQrStatus').style.color = '#16a34a';
+                                setTimeout(function() {
+                                    closePaymentModal();
+                                    closeOrderDetail();
+                                    loadOrders();
+                                    showToast('✅ Payment received via Bakong');
+                                }, 1200);
+                            } else if (d.error === 'token_expired') {
+                                clearInterval(obBakongInterval);
+                                obBakongInterval = null;
+                                document.getElementById('obQrStatus').textContent = '❌ Token expired - contact admin';
+                                document.getElementById('obQrStatus').style.color = '#e11d48';
+                            }
+                        } catch(e) {}
+                    };
+                    xhr.send();
+                }, 2000);
+            } else {
+                document.getElementById('obQrStatus').textContent = '❌ Failed to generate QR';
+                document.getElementById('obQrStatus').style.color = '#e11d48';
+            }
+        } catch (err) {
+            document.getElementById('obQrStatus').textContent = '❌ Network error';
+            document.getElementById('obQrStatus').style.color = '#e11d48';
+        }
+        return;
+    }
+
+    // Cash / Riel / Pay Later — mark paid immediately
+    closePaymentModal();
+    var btn = document.querySelector('#detailActions .paid-btn');
+    if (btn) btn.disabled = true;
+    try {
+        var r = await fetch(BOARD_API + '?action=paid&id=' + id + '&method=' + encodeURIComponent(method), { cache: "no-store" });
+        var res = await r.json();
+        if (res.ok) {
+            closeOrderDetail();
+            await loadOrders();
+            showToast("✅ Order marked as paid (" + method + ")");
+        } else {
+            showToast("❌ Failed: " + (res.error || "Unknown error"), 'error');
+        }
+    } catch (err) {
+        showToast("❌ Request failed", 'error');
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+function cancelBakongPayment() {
+    if (obBakongInterval) { clearInterval(obBakongInterval); obBakongInterval = null; }
+    closePaymentModal();
+}
+
 // ── Mark as Prepare ──
 async function markPrepare(id) {
     const btn = document.querySelector('#detailActions .prepare-btn');
@@ -544,6 +676,7 @@ document.addEventListener('keydown', function(e) {
     if (document.getElementById('refundModal').classList.contains('active')) closeRefundModal();
     if (document.getElementById('remakeModal').classList.contains('active')) closeRemakeModal();
     if (document.getElementById('orderDetailModal').classList.contains('active')) closeOrderDetail();
+    if (document.getElementById('paymentModal').classList.contains('active')) closePaymentModal();
 });
 
 // ── Time-ago auto-refresh ──

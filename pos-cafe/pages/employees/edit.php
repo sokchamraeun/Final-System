@@ -28,6 +28,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $v->required('name')->max('name', 200);
 
     if ($v->passes()) {
+        $photo = (string) input('existing_photo', '');
+        if (!empty($_FILES['photo_file']['name']) && $_FILES['photo_file']['error'] === UPLOAD_ERR_OK) {
+            $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            if (in_array($_FILES['photo_file']['type'], $allowed, true)) {
+                $upload_dir = APP_ROOT . '/uploads/';
+                if (!is_dir($upload_dir)) mkdir($upload_dir, 0777, true);
+                $ext   = strtolower(pathinfo($_FILES['photo_file']['name'], PATHINFO_EXTENSION));
+                $photo = 'uploads/' . time() . '_' . uniqid() . '.' . $ext;
+                move_uploaded_file($_FILES['photo_file']['tmp_name'], $upload_dir . basename($photo));
+                if (!empty($employee['photo']) && file_exists(APP_ROOT . '/' . $employee['photo'])) {
+                    @unlink(APP_ROOT . '/' . $employee['photo']);
+                }
+            }
+        }
         (new Employee())->update($id, [
             'name'          => input('name'),
             'phone'         => input('phone'),
@@ -36,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'hire_date'     => input('hire_date'),
             'job_title'     => input('job_title'),
             'salary'        => (float) input('salary', 0),
-            'photo'         => input('photo'),
+            'photo'         => $photo,
             'shift'         => input('shift'),
         ]);
         flash('Employee updated.', 'success');

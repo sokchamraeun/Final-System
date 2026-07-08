@@ -2,8 +2,12 @@
 # Active: SSL is enabled on the host (Let's Encrypt AutoSSL). Forces every
 # request onto https. If you ever run locally on XAMPP without SSL, comment
 # these out again or the local site will redirect-loop.
+# Skip the redirect when a trusted proxy (ngrok, etc.) already terminated TLS
+# and says so via X-Forwarded-Proto — otherwise Apache sees HTTPS=off on every
+# tunneled request (since the proxy forwards plain HTTP) and 301-loops forever.
 RewriteEngine On
 RewriteCond %{HTTPS} off
+RewriteCond %{HTTP:X-Forwarded-Proto} !https
 RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
 # ── Security headers ────────────────────────────────────────────────────────

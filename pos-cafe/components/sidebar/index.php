@@ -131,239 +131,198 @@ if (!$sb_cur) {
         $sb_cur = basename($_SERVER['PHP_SELF'] ?? '');
     }
 }
-$sb_groups       = [
-    'overview'       => ['dashboard'],
-    'orders'         => ['orders', 'orders-board'],
-    'operations'     => ['stands'],
-    'loyalty'        => ['loyalty'],
-    'catalog'        => ['products', 'categories', 'inventory', 'recipes', 'ingredients', 'levels'],
-    'reconciliation' => ['stock'],
-    'procurement'    => ['suppliers', 'purchase-orders'],
-    'analytics'      => ['report', 'reports'],
-    'staff'          => ['employees', 'roles', 'attendance', 'announcements', 'settings', 'admins'],
-];
-$sb_active_group = null;
-foreach ($sb_groups as $g => $pages) {
-    if (in_array($sb_cur, $pages, true)) { $sb_active_group = $g; break; }
-}
-if ($sb_active_group === null) $sb_active_group = 'overview';
-$sb_open  = fn($g) => $g === $sb_active_group;
 $sb_act   = fn($href) => $sb_cur === $href ? ' active' : '';
 $_can_stands = in_array($_SESSION['role'] ?? '', ['admin', 'manager', 'staff'], true);
 ?>
 <aside id="appSidebar"
-       class="fixed inset-y-0 left-0 z-40 flex w-[242px] -translate-x-full flex-col bg-[#111111] text-slate-300 transition-transform duration-300 max-h-screen lg:translate-x-0"
+       class="fixed inset-y-0 left-0 z-40 flex w-[260px] -translate-x-full flex-col bg-black text-slate-300 transition-[transform,width] duration-300 max-h-screen lg:translate-x-0"
        style="font-family:'Poppins',sans-serif">
 
-  <style>
-    :root{--sb-w:242px}
+  <style type="text/tailwindcss">
+    :root{--sb-w:260px}
     @media(min-width:1024px){
-      .vo-main-col{ margin-left:242px; }
-      .back-btn{ left:calc(22px + var(--sb-w))!important; }
-      .sc-bar{ left:calc(20px + var(--sb-w))!important; }
+      .vo-main-col{ margin-left:260px; transition:margin-left .3s; }
+      .back-btn{ left:calc(22px + var(--sb-w))!important; transition:left .3s; }
+      .sc-bar{ left:calc(20px + var(--sb-w))!important; transition:left .3s; }
     }
-    [data-theme="light"] #appSidebar{background:#ffffff!important;border-right:1px solid #e2e5ea;}
+    [data-theme="light"] #appSidebar{ @apply !bg-white border-r border-slate-200; }
     .sb-scroll::-webkit-scrollbar{display:none}
     .sb-scroll{scrollbar-width:none}
-    #appSidebar .group-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;padding:14px 14px 6px;opacity:.85;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;border-radius:7px;transition:opacity .2s,color .2s}
-    #appSidebar .group-label:hover{opacity:1;color:#f5f5f5}
-    #appSidebar .group-label.open{opacity:1;color:#d1904b}
-    #appSidebar .nav-chev{font-size:9px;flex-shrink:0;margin-left:4px;transition:transform .28s}
-    #appSidebar .group-label.open .nav-chev{transform:rotate(90deg)}
-    #appSidebar .group-items{overflow:hidden;max-height:400px;transition:max-height .32s,opacity .22s;opacity:1}
-    #appSidebar .group-items.collapsed{max-height:0!important;opacity:0;pointer-events:none}
-    #appSidebar .nav-link{display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:7px;color:#888;font-size:13.5px;font-weight:500;transition:background .18s,color .18s,box-shadow .18s,border-color .18s;margin-bottom:2px;border:1px solid transparent;position:relative;text-decoration:none}
-    #appSidebar .nav-link:hover{background:linear-gradient(90deg,rgba(209,144,75,.13) 0%,rgba(209,144,75,.04) 100%);color:#d1904b;border-color:rgba(209,144,75,.22);box-shadow:0 2px 16px rgba(209,144,75,.18),inset 0 0 16px rgba(209,144,75,.05)}
-    #appSidebar .nav-link.active{background:linear-gradient(90deg,rgba(209,144,75,.18) 0%,rgba(209,144,75,.06) 100%);color:#d1904b;font-weight:600;border-color:rgba(209,144,75,.3);box-shadow:0 2px 20px rgba(209,144,75,.25),inset 0 0 20px rgba(209,144,75,.07)}
-    #appSidebar .nav-link i{width:16px;text-align:center;font-size:13px;flex-shrink:0}
-    #appSidebar .badge-pill{margin-left:auto;flex-shrink:0;background:#d1904b;color:#000;font-size:9.5px;font-weight:800;padding:1px 7px;border-radius:50px;min-width:18px;text-align:center}
-    #appSidebar .badge-red{background:#ff6b6b!important;color:#fff!important}
-    #appSidebar .badge-purple{background:#9b59b6!important;color:#fff!important}
-    [data-theme="light"] #appSidebar .nav-link{color:#5a6373}
-    [data-theme="light"] #appSidebar .nav-link:hover{color:#d1904b}
-    [data-theme="light"] #appSidebar .nav-link.active{color:#d1904b}
-    [data-theme="light"] #appSidebar .group-label{color:#5a6373}
-    [data-theme="light"] #appSidebar .group-label:hover{color:#111827}
-    .sb-toggle{display:none;position:fixed;top:14px;left:14px;z-index:200;background:var(--bg-card,#111);border:1px solid var(--border,#1f1f1f);color:var(--text,#f5f5f5);width:40px;height:40px;border-radius:7px;align-items:center;justify-content:center;font-size:15px}
-    .sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(4px);z-index:90}
-    .sb-overlay.active{display:block}
-    @media(max-width:1023px){
-      #appSidebar{transform:translateX(-100%)}
-      #appSidebar.open{transform:translateX(0)}
-      .sb-toggle{display:flex}
+
+    @layer components {
+      /* Chunkier nav items, plain dark pill on active state (screenshot style) */
+      #appSidebar .nav-link{ @apply flex items-center gap-3 rounded px-3.5 py-2.5 mb-1 text-sm font-semibold text-neutral-400 border border-transparent relative no-underline transition-all; }
+      #appSidebar .nav-link:hover{ @apply bg-teal-500/10 text-teal-300 translate-x-0.5; }
+      #appSidebar .nav-link:hover i{ @apply text-teal-300; }
+      #appSidebar .nav-link:focus{ @apply outline-none bg-teal-500 text-teal-100 scale-[.98]; box-shadow: inset 0 2px 5px rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.06); }
+      #appSidebar .nav-link:focus-visible{ @apply ring-2 ring-teal-500/60; }
+      #appSidebar .nav-link:active{ @apply bg-teal-500/20 text-teal-200 scale-[.97]; box-shadow: inset 0 3px 6px rgba(0,0,0,.55), inset 0 -1px 0 rgba(255,255,255,.05); }
+      #appSidebar .nav-link.active{ @apply bg-teal-500 text-white font-bold; }
+      #appSidebar .nav-link.active i{ @apply text-white; }
+      #appSidebar .nav-link.active:hover{ @apply bg-teal-600 text-white; }
+      #appSidebar .nav-link.active:hover i{ @apply text-white; }
+      #appSidebar .nav-link i{ @apply w-[18px] text-center text-[15px] shrink-0 transition-colors; }
+
+      /* Quick-order CTA — behaves like a nav-link (hover/focus/press background
+         changes) while it's not the current page; once active it flattens to
+         the same solid teal used by every other current-page nav-link. */
+      #appSidebar .cta-link{ @apply mx-3 mb-2 flex items-center gap-3 rounded-sm px-4 py-3 text-[14px] font-bold text-white no-underline transition-all; background: none; box-shadow: none; }
+      #appSidebar .cta-link:not(.active):hover{ @apply -translate-y-0.5; background: linear-gradient(135deg,#0f9c8f,#2dd4bf); box-shadow: 0 8px 22px -4px rgba(20,184,166,.6); }
+      #appSidebar .cta-link:not(.active):focus{ @apply outline-none scale-[.98]; background: linear-gradient(135deg,#0b8074,#0d9488); box-shadow: inset 0 2px 5px rgba(0,0,0,.35); }
+      #appSidebar .cta-link:not(.active):active{ @apply scale-[.97]; background: linear-gradient(135deg,#086b61,#0b8074); box-shadow: inset 0 3px 6px rgba(0,0,0,.45); }
+      #appSidebar .cta-link.active{ @apply bg-teal-500 shadow-none; }
+      #appSidebar .cta-link.active:hover{ @apply bg-teal-600; }
+
+      #appSidebar .badge-pill{ @apply ml-auto shrink-0 bg-[#d1904b] text-black text-[9.5px] font-extrabold px-[7px] py-px rounded-full min-w-[18px] text-center; }
+      #appSidebar .badge-red{ @apply !bg-red-500 !text-white; }
+      #appSidebar .badge-purple{ @apply !bg-purple-500 !text-white; }
+      /* Active pill uses a stronger red badge, matching the reference screenshot */
+      #appSidebar .nav-link.active .badge-pill{ @apply !bg-red-500 !text-white shadow-[0_2px_6px_rgba(255,59,59,.5)]; }
+    }
+
+    [data-theme="light"] #appSidebar .nav-link{ @apply text-slate-600; }
+    [data-theme="light"] #appSidebar .nav-link:hover{ @apply text-slate-900; }
+    [data-theme="light"] #appSidebar .nav-link.active{ @apply text-slate-900; }
+
+    /* ── Collapsed (icon-rail) desktop mode ── */
+    @layer components {
+      #appSidebar.mini{ @apply w-[76px]; }
+      #appSidebar.mini .sb-label,
+      #appSidebar.mini .nav-link span,
+      #appSidebar.mini .badge-pill,
+      #appSidebar.mini .footer-stat span,
+      #appSidebar.mini #sbClock{ @apply !hidden; }
+      #appSidebar.mini .nav-link{ @apply justify-center px-2.5; }
+      #appSidebar.mini .nav-link i{ @apply w-auto; }
+      #appSidebar.mini .sb-collapse i{ @apply rotate-180; }
+      #appSidebar.mini .profile-row{ @apply justify-center; }
     }
   </style>
 
-  <button class="sb-toggle" onclick="sbToggle()"><i class="fa-solid fa-bars"></i></button>
-  <div class="sb-overlay" onclick="sbToggle()"></div>
+  <button onclick="sbToggle()" class="fixed left-3.5 top-3.5 z-[200] flex h-10 w-10 items-center justify-center rounded-md border border-neutral-800 bg-neutral-900 text-[15px] text-neutral-100 lg:hidden"><i class="fa-solid fa-bars"></i></button>
+  <div class="sb-overlay fixed inset-0 z-[90] hidden bg-black/70 backdrop-blur-sm" onclick="sbToggle()"></div>
 
   <!-- Profile -->
-  <div class="flex items-center gap-3 border-b border-white/10 px-4 py-3.5">
-    <div class="grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold text-white" style="background:<?= e($profileRoleColor) ?>"><?= e($profileInitials) ?></div>
-    <div class="min-w-0 flex-1">
-      <div class="truncate text-sm font-semibold text-white"><?= e($profileName) ?></div>
-      <div class="flex items-center gap-1.5 text-[10px] text-slate-400"><span class="inline-block h-1.5 w-1.5 rounded-full" style="background:<?= e($profileRoleColor) ?>"></span><?= e($profileRoleName) ?></div>
+  <div class="profile-row flex items-center gap-3 border-b border-white/10 px-4 py-4">
+    <div class="grid h-11 w-11 shrink-0 place-items-center rounded-full text-sm font-bold text-white ring-2 ring-white/10" style="background:<?= e($profileRoleColor) ?>"><?= e($profileInitials) ?></div>
+    <div class="sb-label min-w-0 flex-1">
+      <div class="truncate text-sm font-bold text-white"><?= e($profileName) ?></div>
+      <div class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide" style="color:<?= e($profileRoleColor) ?>"><?= e($profileRoleName) ?></div>
     </div>
-    <div class="text-[11px] font-bold text-amber-500" id="sbClock">--:--</div>
+    <button type="button" class="sb-collapse hidden shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-white/10 hover:text-white lg:grid lg:place-items-center" onclick="sbCollapse()" title="Collapse sidebar">
+      <i class="fa-solid fa-angles-left text-xs transition-transform duration-300"></i>
+    </button>
   </div>
 
   <!-- Logo -->
   <div class="flex items-center gap-3 px-4 py-3">
-    <div class="grid h-9 w-9 place-items-center rounded-xl bg-amber-600 text-white shadow-lg"><i class="fa-solid fa-mug-hot text-sm"></i></div>
-    <div class="min-w-0">
+    <div class="grid h-10 w-10 shrink-0 place-items-center rounded bg-amber-600 text-white shadow-lg"><i class="fa-solid fa-mug-hot text-sm"></i></div>
+    <div class="sb-label min-w-0">
       <div class="truncate text-sm font-bold text-white"><?= e(APP_NAME) ?></div>
       <div class="text-[10px] text-slate-400">Café Management</div>
     </div>
-    <button onclick="sbToggle()" class="ml-auto grid h-7 w-7 place-items-center rounded-lg text-slate-400 hover:bg-white/10 lg:hidden"><i class="fa-solid fa-xmark text-xs"></i></button>
+    <button onclick="sbToggle()" class="ml-auto grid h-7 w-7 shrink-0 place-items-center rounded-lg text-slate-400 hover:bg-white/10 lg:hidden"><i class="fa-solid fa-xmark text-xs"></i></button>
   </div>
 
   <!-- Quick order -->
   <?php if (can('find_orders')): ?>
-  <a href="<?= e(url('menu')) ?>" class="mx-3 mb-2 flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2.5 text-[12px] font-bold text-black shadow-lg transition hover:bg-amber-400 hover:-translate-y-0.5"><i class="fa-solid fa-plus"></i> Take New Order</a>
+  <a href="<?= e(url('menu')) ?>" class="cta-link<?= $sb_act('menu') ?>"><i class="fa-solid fa-cart-shopping"></i> <span class="sb-label">Take New Order</span></a>
   <?php endif; ?>
 
   <!-- Nav -->
   <nav class="sb-scroll flex-1 overflow-y-auto px-3 py-1">
 
-    <!-- Overview -->
     <?php if (can('dashboard')): ?>
-    <div class="group-label<?= $sb_open('overview') ? ' open' : '' ?>" onclick="sbToggleGroup(this)" data-group="overview"><span>Overview</span><i class="fa-solid fa-chevron-right nav-chev"></i></div>
-    <div class="group-items<?= $sb_open('overview') ? '' : ' collapsed' ?>" data-gr="overview">
       <a class="nav-link<?= $sb_act('dashboard') ?>" href="<?= e(url('dashboard')) ?>"><i class="fa-solid fa-chart-pie"></i><span>Dashboard</span><?php if ($sb_pending + $sb_preparing > 0): ?><span class="badge-pill"><?= $sb_pending + $sb_preparing ?></span><?php endif; ?></a>
-    </div>
     <?php endif; ?>
 
-    <!-- Orders -->
-    <?php if (can('find_orders') || can('view_orders')): ?>
-    <div class="group-label<?= $sb_open('orders') ? ' open' : '' ?>" onclick="sbToggleGroup(this)" data-group="orders"><span>Orders</span><i class="fa-solid fa-chevron-right nav-chev"></i></div>
-    <div class="group-items<?= $sb_open('orders') ? '' : ' collapsed' ?>" data-gr="orders">
-      <?php if (can('find_orders')): ?>
+    <?php if (can('find_orders')): ?>
       <a class="nav-link<?= $sb_act('find_order.php') ?>" href="<?= e(root_url('find_order.php')) ?>"><i class="fa-solid fa-magnifying-glass"></i><span>Find Unpaid Orders</span><?php if ($sb_paylater > 0): ?><span class="badge-pill badge-purple"><?= $sb_paylater ?></span><?php elseif ($sb_unpaid > 0): ?><span class="badge-pill badge-purple"><?= $sb_unpaid ?></span><?php endif; ?></a>
-      <?php endif; ?>
-      <?php if (can('view_orders')): ?>
+    <?php endif; ?>
+    <?php if (can('view_orders')): ?>
       <a class="nav-link<?= $sb_act('orders-board') ?>" href="<?= e(url('orders/board')) ?>"><i class="fa-solid fa-receipt"></i><span>Orders</span></a>
-      <?php endif; ?>
-      <?php if (can('find_orders')): ?>
+    <?php endif; ?>
+    <?php if (can('find_orders')): ?>
       <a class="nav-link<?= $sb_act('orders') ?>" href="<?= e(url('orders')) ?>"><i class="fa-solid fa-list"></i><span>All Orders</span></a>
-      <?php endif; ?>
-    </div>
     <?php endif; ?>
 
-    <!-- Operations -->
-    <?php if (can('barista_station') || can('customer_display') || $_can_stands): ?>
-    <div class="group-label<?= $sb_open('operations') ? ' open' : '' ?>" onclick="sbToggleGroup(this)" data-group="operations"><span>Operations</span><i class="fa-solid fa-chevron-right nav-chev"></i></div>
-    <div class="group-items<?= $sb_open('operations') ? '' : ' collapsed' ?>" data-gr="operations">
-      <?php if (can('barista_station')): ?>
+    <?php if (can('barista_station')): ?>
       <a class="nav-link<?= $sb_act('barista_display.php') ?>" href="<?= e(root_url('barista_display.php')) ?>"><i class="fa-solid fa-mug-hot"></i><span>Barista Station</span></a>
-      <?php endif; ?>
-      <?php if (can('customer_display')): ?>
+    <?php endif; ?>
+    <?php if (can('customer_display')): ?>
       <a class="nav-link<?= $sb_act('customer_display.php') ?>" href="<?= e(root_url('customer_display.php')) ?>"><i class="fa-solid fa-display"></i><span>Customer Display</span></a>
-      <?php endif; ?>
-      <?php if ($_can_stands): ?>
+    <?php endif; ?>
+    <?php if ($_can_stands): ?>
       <a class="nav-link<?= $sb_act('stands') ?>" href="<?= e(url('stands')) ?>"><i class="fa-solid fa-table-cells-large"></i><span>Stand Numbers</span></a>
-      <?php endif; ?>
-    </div>
     <?php endif; ?>
 
-    <!-- Loyalty -->
     <?php if (can('loyalty')): ?>
-    <div class="group-label<?= $sb_open('loyalty') ? ' open' : '' ?>" onclick="sbToggleGroup(this)" data-group="loyalty"><span>Loyalty</span><i class="fa-solid fa-chevron-right nav-chev"></i></div>
-    <div class="group-items<?= $sb_open('loyalty') ? '' : ' collapsed' ?>" data-gr="loyalty">
       <a class="nav-link<?= $sb_act('loyalty') ?>" href="<?= e(url('loyalty')) ?>"><i class="fa-solid fa-star"></i><span>Loyalty Card</span></a>
-    </div>
     <?php endif; ?>
 
-    <!-- Catalog -->
-    <?php if (can('products') || can('categories') || can('ingredients') || can('recipes') || can('manage_levels')): ?>
-    <div class="group-label<?= $sb_open('catalog') ? ' open' : '' ?>" onclick="sbToggleGroup(this)" data-group="catalog"><span>Catalog</span><i class="fa-solid fa-chevron-right nav-chev"></i></div>
-    <div class="group-items<?= $sb_open('catalog') ? '' : ' collapsed' ?>" data-gr="catalog">
-      <?php if (can('products')): ?>
+    <?php if (can('products')): ?>
       <a class="nav-link<?= $sb_act('products') ?>" href="<?= e(url('products')) ?>"><i class="fa-solid fa-cube"></i><span>Products</span></a>
-      <?php endif; ?>
-      <?php if (can('categories')): ?>
+    <?php endif; ?>
+    <?php if (can('categories')): ?>
       <a class="nav-link<?= $sb_act('categories') ?>" href="<?= e(url('categories')) ?>"><i class="fa-solid fa-tags"></i><span>Categories</span></a>
-      <?php endif; ?>
-      <?php if (can('ingredients')): ?>
+    <?php endif; ?>
+    <?php if (can('ingredients')): ?>
       <a class="nav-link<?= $sb_act('inventory') ?>" href="<?= e(url('inventory')) ?>"><i class="fa-solid fa-boxes-stacked"></i><span>Ingredients</span><?php if ($sb_low_stock > 0): ?><span class="badge-pill badge-red"><?= $sb_low_stock ?></span><?php endif; ?></a>
-      <?php endif; ?>
-      <?php if (can('recipes')): ?>
+    <?php endif; ?>
+    <?php if (can('recipes')): ?>
       <a class="nav-link<?= $sb_act('recipes') ?>" href="<?= e(url('recipes')) ?>"><i class="fa-solid fa-utensils"></i><span>Drink Recipe</span></a>
-      <?php endif; ?>
-      <?php if (can('manage_levels')): ?>
+    <?php endif; ?>
+    <?php if (can('manage_levels')): ?>
       <a class="nav-link<?= $sb_act('levels') ?>" href="<?= e(url('levels')) ?>"><i class="fa-solid fa-sliders"></i><span>Customize Levels</span></a>
-      <?php endif; ?>
-    </div>
     <?php endif; ?>
 
-    <!-- Reconciliation -->
-    <?php if (can('cash_reconciliation') || can('stock_count')): ?>
-    <div class="group-label<?= $sb_open('reconciliation') ? ' open' : '' ?>" onclick="sbToggleGroup(this)" data-group="reconciliation"><span>Reconciliation</span><i class="fa-solid fa-chevron-right nav-chev"></i></div>
-    <div class="group-items<?= $sb_open('reconciliation') ? '' : ' collapsed' ?>" data-gr="reconciliation">
-      <?php if (can('cash_reconciliation')): ?>
+    <?php if (can('cash_reconciliation')): ?>
       <a class="nav-link<?= $sb_act('reconciliation_report.php') ?>" href="<?= e(root_url('reconciliation_report.php')) ?>"><i class="fa-solid fa-cash-register"></i><span>Cash Count</span><?php if ($sb_recon_alerts > 0): ?><span class="badge-pill badge-red"><?= $sb_recon_alerts ?></span><?php endif; ?></a>
-      <?php endif; ?>
-      <?php if (can('stock_count')): ?>
+    <?php endif; ?>
+    <?php if (can('stock_count')): ?>
       <a class="nav-link<?= $sb_act('stock') ?>" href="<?= e(url('stock')) ?>"><i class="fa-solid fa-clipboard-list"></i><span>Stock Count</span></a>
-      <?php endif; ?>
-    </div>
     <?php endif; ?>
 
-    <!-- Procurement -->
-    <?php if (can('suppliers') || can('purchase_orders')): ?>
-    <div class="group-label<?= $sb_open('procurement') ? ' open' : '' ?>" onclick="sbToggleGroup(this)" data-group="procurement"><span>Procurement</span><i class="fa-solid fa-chevron-right nav-chev"></i></div>
-    <div class="group-items<?= $sb_open('procurement') ? '' : ' collapsed' ?>" data-gr="procurement">
-      <?php if (can('suppliers')): ?>
+    <?php if (can('suppliers')): ?>
       <a class="nav-link<?= $sb_act('suppliers') ?>" href="<?= e(url('suppliers')) ?>"><i class="fa-solid fa-truck-ramp-box"></i><span>Suppliers</span></a>
-      <?php endif; ?>
-      <?php if (can('purchase_orders')): ?>
+    <?php endif; ?>
+    <?php if (can('purchase_orders')): ?>
       <a class="nav-link<?= $sb_act('purchase-orders') ?>" href="<?= e(url('purchase-orders')) ?>"><i class="fa-solid fa-file-invoice"></i><span>Purchase Orders</span></a>
-      <?php endif; ?>
-    </div>
     <?php endif; ?>
 
-    <!-- Analytics -->
-    <?php if (can('report') || in_array($_SESSION['role'] ?? '', ['admin','manager'])): ?>
-    <div class="group-label<?= $sb_open('analytics') ? ' open' : '' ?>" onclick="sbToggleGroup(this)" data-group="analytics"><span>Analytics</span><i class="fa-solid fa-chevron-right nav-chev"></i></div>
-    <div class="group-items<?= $sb_open('analytics') ? '' : ' collapsed' ?>" data-gr="analytics">
-      <?php if (can('report')): ?>
+    <?php if (can('report')): ?>
       <a class="nav-link<?= $sb_act('report.php') ?>" href="<?= e(root_url('report.php')) ?>"><i class="fa-solid fa-chart-simple"></i><span>Daily Report</span></a>
-      <?php endif; ?>
-    </div>
     <?php endif; ?>
 
-    <!-- Staff -->
-    <div class="group-label<?= $sb_open('staff') ? ' open' : '' ?>" onclick="sbToggleGroup(this)" data-group="staff"><span>Staff</span><i class="fa-solid fa-chevron-right nav-chev"></i></div>
-    <div class="group-items<?= $sb_open('staff') ? '' : ' collapsed' ?>" data-gr="staff">
-      <?php if (can('employees')): ?>
+    <?php if (can('employees')): ?>
       <a class="nav-link<?= $sb_act('employees') ?>" href="<?= e(url('employees')) ?>"><i class="fa-solid fa-user-tie"></i><span>Employees</span></a>
-      <?php endif; ?>
-      <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
+    <?php endif; ?>
+    <?php if (($_SESSION['role'] ?? '') === 'admin'): ?>
       <a class="nav-link<?= $sb_act('roles') ?>" href="<?= e(url('roles')) ?>"><i class="fa-solid fa-shield-halved"></i><span>Manage Roles</span></a>
-      <?php endif; ?>
-      <?php if (can('reset_password')): ?>
+    <?php endif; ?>
+    <?php if (can('reset_password')): ?>
       <a class="nav-link<?= $sb_act('admins') ?>" href="<?= e(url('admins')) ?>"><i class="fa-solid fa-key"></i><span>Reset Password</span></a>
-      <?php endif; ?>
-      <?php if (can('announcements')): ?>
+    <?php endif; ?>
+    <?php if (can('announcements')): ?>
       <a class="nav-link<?= $sb_act('announcements') ?>" href="<?= e(url('announcements')) ?>"><i class="fa-solid fa-bullhorn"></i><span>Announcements</span><?php if ($sb_unread_ann > 0): ?><span class="badge-pill badge-red"><?= $sb_unread_ann ?></span><?php endif; ?></a>
-      <?php endif; ?>
-      <?php if (can('attendance')): ?>
+    <?php endif; ?>
+    <?php if (can('attendance')): ?>
       <a class="nav-link<?= $sb_act('attendance') ?>" href="<?= e(url('attendance')) ?>"><i class="fa-solid fa-fingerprint"></i><span>Attendance</span></a>
-      <?php endif; ?>
-      <?php if (can('promotions')): ?>
+    <?php endif; ?>
+    <?php if (can('promotions')): ?>
       <a class="nav-link<?= $sb_act('settings') ?>" href="<?= e(url('settings')) ?>"><i class="fa-solid fa-sliders"></i><span>Promotions</span></a>
-      <?php endif; ?>
-      <?php if (can('my_profile')): ?>
+    <?php endif; ?>
+    <?php if (can('my_profile')): ?>
       <a class="nav-link<?= $sb_act('profile.php') ?>" href="<?= e(root_url('profile.php')) ?>"><i class="fa-solid fa-circle-user"></i><span>My Profile</span></a>
-      <?php endif; ?>
-    </div>
+    <?php endif; ?>
 
   </nav>
 
   <!-- Footer -->
   <div class="border-t border-white/10 px-3 py-2.5">
     <div class="mb-2 flex gap-1.5">
-      <div class="flex flex-1 items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] text-slate-400"><i class="fa-solid fa-dollar-sign text-amber-500 text-[9px]"></i><span class="truncate">$<?= number_format((float)$sb_sales, 2) ?></span></div>
-      <div class="flex flex-1 items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] text-slate-400"><i class="fa-solid fa-receipt text-amber-500 text-[9px]"></i><span class="truncate"><?= (int)$sb_total_orders ?> orders</span></div>
+      <div class="footer-stat flex flex-1 items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] text-slate-400"><i class="fa-solid fa-dollar-sign text-amber-500 text-[9px]"></i><span class="truncate">$<?= number_format((float)$sb_sales, 2) ?></span></div>
+      <div class="footer-stat flex flex-1 items-center gap-1.5 rounded-lg bg-white/5 px-2.5 py-1.5 text-[10px] text-slate-400"><i class="fa-solid fa-receipt text-amber-500 text-[9px]"></i><span class="truncate"><?= (int)$sb_total_orders ?> orders</span></div>
     </div>
     <a href="<?= e(root_url('logout.php')) ?>" class="nav-link !text-red-400 !border-transparent hover:!bg-red-500/20 hover:!text-red-300"><i class="fa-solid fa-right-from-bracket"></i><span>Logout</span></a>
   </div>
@@ -371,25 +330,33 @@ $_can_stands = in_array($_SESSION['role'] ?? '', ['admin', 'manager', 'staff'], 
 </aside>
 
 <script>
-/* Collapsible groups */
-function sbToggleGroup(label) {
-  var items = label.nextElementSibling;
-  if (!items || !items.classList.contains('group-items')) return;
-  var open = label.classList.contains('open');
-  label.classList.toggle('open', !open);
-  items.classList.toggle('collapsed', open);
-  var g = label.dataset.group;
-  if (g) localStorage.setItem('nav_' + g, open ? '0' : '1');
-}
 document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('#appSidebar .group-label[data-group]').forEach(function(l) {
-    var s = localStorage.getItem('nav_' + l.dataset.group);
-    if (s === null) return;
-    var items = l.nextElementSibling;
-    if (!items) return;
-    l.classList.toggle('open', s === '1');
-    items.classList.toggle('collapsed', s !== '1');
-  });
+  var sb = document.getElementById('appSidebar');
+  if (sb && localStorage.getItem('sb_mini') === '1') {
+    sb.classList.add('mini');
+    document.documentElement.style.setProperty('--sb-w', '76px');
+  }
+
+  /* Keep the nav scrolled to where it was (or to the active link) instead
+     of jumping back to the top on every page load / navigation. */
+  var navScroll = document.querySelector('#appSidebar .sb-scroll');
+  if (navScroll) {
+    var savedScroll = sessionStorage.getItem('sb_scroll');
+    if (savedScroll !== null) {
+      navScroll.scrollTop = parseInt(savedScroll, 10) || 0;
+    } else {
+      var activeLink = navScroll.querySelector('.nav-link.active');
+      if (activeLink) activeLink.scrollIntoView({ block: 'center' });
+    }
+    navScroll.addEventListener('scroll', function() {
+      sessionStorage.setItem('sb_scroll', String(navScroll.scrollTop));
+    });
+    navScroll.querySelectorAll('.nav-link').forEach(function(link) {
+      link.addEventListener('click', function() {
+        sessionStorage.setItem('sb_scroll', String(navScroll.scrollTop));
+      });
+    });
+  }
 });
 
 /* Mobile toggle */
@@ -397,25 +364,35 @@ function sbToggle() {
   var sb = document.getElementById('appSidebar');
   var ov = document.querySelector('.sb-overlay');
   if (!sb || !ov) return;
-  sb.classList.toggle('open');
-  ov.classList.toggle('active');
+  sb.classList.toggle('-translate-x-full');
+  sb.classList.toggle('translate-x-0');
+  ov.classList.toggle('hidden');
 }
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
     var sb = document.getElementById('appSidebar');
     var ov = document.querySelector('.sb-overlay');
-    if (sb) sb.classList.remove('open');
-    if (ov) ov.classList.remove('active');
+    if (sb) { sb.classList.add('-translate-x-full'); sb.classList.remove('translate-x-0'); }
+    if (ov) ov.classList.add('hidden');
   }
 });
 window.addEventListener('resize', function() {
   if (window.innerWidth > 1023) {
     var sb = document.getElementById('appSidebar');
     var ov = document.querySelector('.sb-overlay');
-    if (sb) sb.classList.remove('open');
-    if (ov) ov.classList.remove('active');
+    if (sb) { sb.classList.add('-translate-x-full'); sb.classList.remove('translate-x-0'); }
+    if (ov) ov.classList.add('hidden');
   }
 });
+
+/* Desktop icon-rail collapse toggle */
+function sbCollapse() {
+  var sb = document.getElementById('appSidebar');
+  if (!sb) return;
+  var mini = sb.classList.toggle('mini');
+  document.documentElement.style.setProperty('--sb-w', mini ? '76px' : '260px');
+  localStorage.setItem('sb_mini', mini ? '1' : '0');
+}
 
 /* Live clock */
 (function tick(){

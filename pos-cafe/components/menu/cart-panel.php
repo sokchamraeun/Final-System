@@ -13,13 +13,25 @@ $cp_tax = $cp_tax ?? 0.0;
 $cp_total = $cp_total ?? 0.0;
 $linked_loyalty = $linked_loyalty ?? null;
 $add_to_order_mode = $add_to_order_mode ?? 0;
+$cp_item_badges = $cp_item_badges ?? [];
+$cp_promo_discount = 0;
+foreach ($cart as $_pi) {
+    $_pid = (int)($_pi['product_id'] ?? 0);
+    $_pct = $cp_item_badges[$_pid] ?? 0;
+    if ($_pct > 0) {
+        $_pp = (float)($_pi['price'] ?? 0);
+        $_pq = (int)($_pi['qty'] ?? 1);
+        $cp_promo_discount += ($_pp / (1 - $_pct / 100) - $_pp) * $_pq;
+    }
+}
+$cp_original_subtotal = $cp_subtotal + $cp_promo_discount;
 ?>
 <aside class="cart-panel" id="cartPanel">
 
   <div class="cp-header">
     <div class="cp-header-left">
-      <i class="fa-solid fa-bag-shopping cp-hdr-icon"></i>
-      <span class="cp-hdr-title">Cart</span>
+      <i class="fa-solid fa-receipt cp-hdr-icon"></i>
+      <span class="cp-hdr-title">Current Order</span>
       <span class="cp-hdr-count" id="cpCount"><?= $cart_count ?> item<?= $cart_count != 1 ? 's' : '' ?></span>
     </div>
     <button class="cp-clear-btn" id="cpClearBtn" onclick="cpClearCart()" <?= empty($cart) ? 'style="display:none"' : '' ?>>
@@ -47,18 +59,33 @@ $add_to_order_mode = $add_to_order_mode ?? 0;
           !empty($item['ice'])        ? 'Ice: '.$item['ice']          : '',
           !empty($item['milk'])       ? 'Milk: '.$item['milk']        : '',
           !empty($item['sugar'])      ? 'Sugar: '.$item['sugar']      : '',
+          !empty($item['addons'])     ? $item['addons']               : '',
         ]);
+        $itemPid  = (int)($item['product_id'] ?? 0);
+        $itemPct  = $cp_item_badges[$itemPid] ?? 0;
+        $itemNew  = (float)($item['price'] ?? 0);
+        $itemOld  = $itemPct > 0 ? $itemNew / (1 - $itemPct / 100) : null;
       ?>
       <div class="cp-item" id="cp-item-<?= $i ?>">
-        <img class="cp-item-img" src="<?= e(root_url($item['image'] ?? '')) ?>" alt="<?= e($item['product_name'] ?? '') ?>" loading="lazy">
+        <div class="cp-item-img-wrap">
+          <?php if ($itemPct > 0): ?><span class="cp-item-ribbon"><?= (int)$itemPct ?>%</span><?php endif; ?>
+          <img class="cp-item-img" src="<?= e(root_url($item['image'] ?? '')) ?>" alt="<?= e($item['product_name'] ?? '') ?>" loading="lazy">
+        </div>
         <div class="cp-item-body">
           <div class="cp-item-top">
             <div class="cp-item-name"><?= e($item['product_name'] ?? '') ?></div>
-            <button class="cp-item-remove" onclick="cpRemoveItem(<?= $i ?>)" title="Remove"><i class="fa-solid fa-xmark"></i></button>
+            <button class="cp-item-remove" onclick="cpRemoveItem(<?= $i ?>)" title="Remove"><i class="fa-solid fa-trash-can"></i></button>
           </div>
-          <?php if ($meta): ?><div class="cp-item-meta"><?= e(implode(' • ', $meta)) ?></div><?php endif; ?>
+          <?php if ($meta): ?>
+          <div class="cp-item-meta">
+            <?php foreach ($meta as $m): ?><span class="cp-item-tag"><?= e($m) ?></span><?php endforeach; ?>
+          </div>
+          <?php endif; ?>
           <div class="cp-item-bottom">
-            <div class="cp-item-price">$<span id="cp-line-<?= $i ?>"><?= number_format((float)($item['price'] ?? 0), 2) ?></span></div>
+            <div class="cp-item-price-row">
+              <?php if ($itemOld !== null): ?><span class="cp-item-price-old">$<?= number_format($itemOld * $qty, 2) ?></span><?php endif; ?>
+              <div class="cp-item-price<?= $itemOld !== null ? ' discounted' : '' ?>">$<span id="cp-line-<?= $i ?>"><?= number_format($line, 2) ?></span></div>
+            </div>
             <div class="cp-qty">
               <button onclick="cpChangeQty(<?= $i ?>, -1)">&minus;</button>
               <input type="number" id="cp-qty-<?= $i ?>" value="<?= $qty ?>" min="1" onchange="cpSetQty(<?= $i ?>,this.value)" onfocus="this.select()" onkeydown="if(event.key==='Enter'){event.preventDefault();cpSetQty(<?= $i ?>,this.value);this.blur();}">
@@ -68,25 +95,16 @@ $add_to_order_mode = $add_to_order_mode ?? 0;
         </div>
       </div>
       <?php endforeach; ?>
-
-      <div class="cp-free-row" id="cpFreeRow" style="<?= $cp_buy3 > 0 ? '' : 'display:none' ?>">
-        <div class="cp-free-icon">&#x1F381;</div>
-        <div>
-          <div style="font-size:13px;font-weight:600;color:var(--text,#1a1410);"><span id="cpFreeName"><?= e($cp_free_name) ?></span> <span class="cp-free-badge">FREE</span></div>
-          <div style="font-size:11px;color:var(--text-sec,#5a4a3a);margin:2px 0;">Buy <?= BUY_X_COUNT ?> Get 1 Free</div>
-          <div style="font-size:15px;font-weight:700;color:#27ae60;">FREE <s style="color:#aaa;font-size:11px;">was $<span id="cpFreePrice"><?= number_format($cp_free_price, 2) ?></span></s></div>
-        </div>
-      </div>
     </div>
 
     <div class="cp-summary" id="cpSummary">
       <div class="cp-sum-row">
         <span>Subtotal</span>
-        <span id="cpSubtotal">$<?= number_format($cp_subtotal, 2) ?></span>
+        <span id="cpSubtotal">$<?= number_format($cp_original_subtotal, 2) ?></span>
       </div>
-      <div class="cp-sum-row discount" id="cpBuy3Row" style="<?= $cp_buy3 > 0 ? '' : 'display:none' ?>">
-        <span>&#x1F389; Buy <?= BUY_X_COUNT ?> Get 1 Free</span>
-        <span id="cpBuy3Amt">-$<?= number_format($cp_buy3, 2) ?></span>
+      <div class="cp-sum-row discount" id="cpPromoRow" style="<?= $cp_promo_discount > 0 ? '' : 'display:none' ?>">
+        <span><i class="fa-solid fa-tag"></i> Promo Discount</span>
+        <span id="cpPromoAmt">-$<?= number_format($cp_promo_discount, 2) ?></span>
       </div>
       <div class="cp-sum-row discount" id="cpHHRow" style="<?= $cp_hh > 0 ? '' : 'display:none' ?>">
         <span>&#x1F305; Happy Hour (<?= HAPPY_HOUR_DISCOUNT ?>% off)</span>
@@ -104,43 +122,19 @@ $add_to_order_mode = $add_to_order_mode ?? 0;
         <span class="amt" id="cpTotal">$<?= number_format($cp_total, 2) ?></span>
       </div>
 
-      <div id="cpDiscountPanel">
-        <?php if ($cp_manual > 0): ?>
-        <button type="button" class="cp-discount-toggle remove" onclick="cpClearDiscount()">
-          <i class="fa-solid fa-xmark"></i> Remove Discount
-        </button>
-        <?php else: ?>
-        <button type="button" class="cp-discount-toggle" id="cpAddDiscBtn" onclick="cpOpenDiscount()">
-          <i class="fa-solid fa-tag"></i> Add Discount
-        </button>
-        <?php endif; ?>
-        <div id="cpDiscountForm" style="display:none">
-          <div class="cp-dtype-row">
-            <button type="button" class="cp-dtype-btn active" id="cpDtypePercent" onclick="cpSetDType('percent')">% Percent</button>
-            <button type="button" class="cp-dtype-btn" id="cpDtypeFlat" onclick="cpSetDType('flat')">$ Flat</button>
-          </div>
-          <div class="cp-disc-inputs">
-            <input type="number" id="cpDiscAmount" placeholder="0" min="0" step="0.01">
-            <input type="text" id="cpDiscReason" placeholder="Reason (e.g. Staff, VIP)" maxlength="100">
-          </div>
-          <div class="cp-disc-actions">
-            <button type="button" class="cp-btn-apply" onclick="cpApplyDiscount()"><i class="fa-solid fa-check"></i> Apply</button>
-            <button type="button" class="cp-btn-cancel" onclick="cpCloseDiscount()">Cancel</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="cp-sum-row" style="padding-top:2px;">
+      <?php if ((float)TAX_RATE > 0): ?>
+      <div class="cp-sum-row" style="padding-top:2px;" id="cpTaxRow">
         <span>Tax (<?= TAX_RATE ?>%)</span>
         <span id="cpTax">$<?= number_format($cp_tax, 2) ?></span>
       </div>
+      <?php endif; ?>
 
       <?php if (!$add_to_order_mode): ?>
       <div class="cp-opt-row" style="margin-top:8px;">
-        <button type="button" class="cp-opt-btn active" id="cpBtnDrinkIn" onclick="cpSetDrinkType('drink_in')">
+        <button style="border-radius: 4px;" type="button" class="cp-opt-btn active" id="cpBtnDrinkIn" onclick="cpSetDrinkType('drink_in')">
           <i class="fa-solid fa-mug-hot"></i> Drink In
         </button>
-        <button type="button" class="cp-opt-btn" id="cpBtnDrinkOut" onclick="cpSetDrinkType('drink_out')">
+        <button style="border-radius: 4px;" type="button" class="cp-opt-btn" id="cpBtnDrinkOut" onclick="cpSetDrinkType('drink_out')">
           <i class="fa-solid fa-bag-shopping"></i> Take Out
         </button>
       </div>
@@ -153,19 +147,21 @@ $add_to_order_mode = $add_to_order_mode ?? 0;
       </div>
       <?php endif; ?>
 
-      <div class="cp-opt-field" style="margin-top:8px;">
-        <label><i class="fa-regular fa-user"></i> Customer Name</label>
-        <input type="text" id="cpCustomerName" placeholder="Leave blank for Guest">
-      </div>
-
-      <div class="cp-opt-field" id="cpTableNumberGroup">
-        <label><i class="fa-solid fa-hashtag"></i> Stand Number <span style="font-weight:400;color:var(--text-muted,#9a8070);">(optional)</span></label>
-        <div style="display:flex;gap:6px;align-items:center;">
-          <input type="text" id="cpTableNumber" name="table_number" maxlength="10" placeholder="e.g. 1, 7, 12..." onblur="cpCheckStand(this.value)" style="flex:1;">
-          <button type="button" onclick="cpToggleStandGrid()" style="background:none;border:1px solid var(--border,#e0d4c4);border-radius:8px;padding:8px 10px;font-size:12px;cursor:pointer;color:var(--text-sec,#5a4a3a);font-family:'Poppins',sans-serif;"><i class="fa-solid fa-table-cells-large"></i> Grid</button>
+      <div class="cp-opt-row-fields" style="display:flex;gap:8px;margin-top:8px;">
+        <div class="cp-opt-field" style="margin:0;flex:1;">
+          <label><i class="fa-regular fa-user"></i> Customer Name</label>
+          <input style="border-radius:4px;" type="text" id="cpCustomerName" placeholder="Leave blank for Guest">
         </div>
-        <div id="cpStandWarn" class="cp-stand-warn"><i class="fa-solid fa-triangle-exclamation"></i> <span id="cpStandWarnText"></span></div>
-        <div id="cpStandGrid"></div>
+        <div class="cp-opt-field" id="cpTableNumberGroup" style="margin:0;flex:1;">
+          <label><i class="fa-solid fa-hashtag"></i> Stand <span style="font-weight:400;color:var(--text-muted,#9a8070);">(opt)</span></label>
+          <select id="cpTableNumber" name="table_number" onchange="cpCheckStand(this.value)" style="width:100%;padding:7px 10px;border-radius:4px;font-size:13px;outline:none;border:1.5px solid var(--border,#e0d4c4);background:var(--bg,#f4efe9);color:var(--text,#1a1410);font-family:'Poppins',sans-serif;cursor:pointer;">
+            <option value="">Select stand</option>
+            <?php for ($i = 1; $i <= STAND_COUNT; $i++): ?>
+            <option value="<?= $i ?>">Stand #<?= $i ?></option>
+            <?php endfor; ?>
+          </select>
+          <div id="cpStandWarn" class="cp-stand-warn"><i class="fa-solid fa-triangle-exclamation"></i> <span id="cpStandWarnText"></span></div>
+        </div>
       </div>
 
       <div class="cp-loyalty">
@@ -190,7 +186,7 @@ $add_to_order_mode = $add_to_order_mode ?? 0;
   <div class="cp-footer" id="cpFooter" <?= empty($cart) ? 'style="display:none"' : '' ?>>
     <div style="display:none" id="cpTotalHidden">$<?= number_format($cp_total, 2) ?></div>
 
-    <form method="post" action="<?= e(root_url('confirm_order.php')) ?>" id="cpCheckoutForm">
+    <form method="post" action="<?= e(BASE_URL . '/confirm_order.php') ?>" id="cpCheckoutForm">
       <input type="hidden" name="csrf_token" value="<?= e($_SESSION['csrf_token']) ?>">
       <input type="hidden" name="order_type" id="cpOrderTypeInput" value="drink_in">
       <input type="hidden" name="is_add_to_order" value="<?= $add_to_order_mode > 0 ? '1' : '0' ?>">
@@ -199,53 +195,11 @@ $add_to_order_mode = $add_to_order_mode ?? 0;
       <?php endif; ?>
       <div id="cpPaymentInputs"></div>
 
-      <?php if (!$add_to_order_mode): ?>
-      <div class="cp-pay-pills">
-        <label class="cp-pay-pill" data-method="bakong" onclick="cpTogglePayment(this)">
-          <input type="checkbox" value="bakong"><i class="fa-solid fa-qrcode"></i> Bakong
-        </label>
-        <label class="cp-pay-pill" data-method="cash" onclick="cpTogglePayment(this)">
-          <input type="checkbox" value="cash"><i class="fa-solid fa-money-bill-wave"></i> Cash
-        </label>
-        <label class="cp-pay-pill" data-method="paylater" onclick="cpTogglePayment(this)">
-          <input type="checkbox" value="paylater"><i class="fa-solid fa-clock"></i> Later
-        </label>
-        <label class="cp-pay-pill" data-method="riel" onclick="cpTogglePayment(this)">
-          <input type="checkbox" value="riel"><i class="fa-solid fa-coins"></i> Riel
-        </label>
-      </div>
-
-      <div class="cp-split-inputs" id="cpSplitInputs"><div id="cpSplitRows"></div></div>
-
-      <div class="cp-change-calc" id="cpRielCalc">
-        <label><i class="fa-solid fa-coins" style="color:#e74c3c;"></i> Amount in Riel</label>
-        <input type="number" id="cpRielReceived" step="1" min="0" placeholder="0" oninput="cpCalcRielChange()" onfocus="this.select()">
-        <div class="cp-change-row"><span class="change-label">USD equiv.</span><span class="change-amount" id="cpRielUsdEquiv">$0.00</span></div>
-        <div class="cp-change-row" id="cpRielChangeRow" style="display:none;"><span class="change-label">Change (KHR)</span><span class="change-amount" id="cpRielChangeKhr">&#x17DB;0</span></div>
-      </div>
-
-      <div class="cp-change-calc" id="cpChangeCalc">
-        <label><i class="fa-solid fa-money-bill-wave" style="color:#55e087;"></i> Amount Received</label>
-        <input type="number" id="cpCashReceived" step="0.01" min="0" placeholder="0.00" oninput="cpCalcChange()" onfocus="this.select()">
-        <div class="cp-change-row"><span class="change-label">Change</span><span class="change-amount" id="cpChangeAmount">$0.00</span></div>
-      </div>
-      <?php endif; ?>
-
       <button type="button" class="cp-confirm-btn<?= $add_to_order_mode ? ' paylater' : '' ?>" id="cpConfirmBtn" onclick="cpOnConfirmOrderClick()">
         <i class="fa-solid fa-<?= $add_to_order_mode ? 'cart-plus' : 'credit-card' ?>" id="cpConfirmIcon"></i>
         <span id="cpConfirmText"><?= $add_to_order_mode ? 'Add to Order #'.$add_to_order_mode : 'Place Order' ?></span>
       </button>
     </form>
-
-    <div class="cp-shortcuts">
-      <?php if (!$add_to_order_mode): ?>
-      <span><kbd>B</kbd> Bakong</span>
-      <span><kbd>C</kbd> Cash</span>
-      <span><kbd>P</kbd> Pay Later</span>
-      <span><kbd>R</kbd> Riel</span>
-      <?php endif; ?>
-      <span><kbd>Enter</kbd> Confirm</span>
-    </div>
   </div>
 
 </aside>

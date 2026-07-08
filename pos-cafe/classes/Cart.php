@@ -28,7 +28,7 @@ final class Cart
     /**
      * Add a product (with options) to the session cart.
      *
-     * @param array{sweetness?:string,ice?:string,milk?:string,size?:string} $options
+     * @param array{sweetness?:string,ice?:string,milk?:string,sugar?:string,size?:string,addons?:string} $options
      * @return array{count:int,total:float}  Cart totals after the add.
      * @throws CartException on invalid input or unknown product.
      */
@@ -44,6 +44,7 @@ final class Cart
         $milk      = trim((string) ($options['milk'] ?? ''));
         $sugar     = trim((string) ($options['sugar']     ?? ''));
         $sizeCode  = trim((string) ($options['size'] ?? ''));
+        $addons    = trim((string) ($options['addons'] ?? ''));
 
         $product = $this->db->first(
             "SELECT product_id, name, price, image, has_sizes FROM products WHERE product_id = ?",
@@ -67,6 +68,7 @@ final class Cart
             'ice'          => $ice,
             'milk'         => $milk,
             'sugar'        => $sugar,
+            'addons'       => $addons,
             'qty'          => $qty,
         ]);
 
@@ -148,7 +150,8 @@ final class Cart
                 $item['sweetness'] === $line['sweetness'] &&
                 $item['ice']       === $line['ice'] &&
                 $item['milk']      === $line['milk'] &&
-                $item['sugar']     === $line['sugar']
+                $item['sugar']     === $line['sugar'] &&
+                ($item['addons'] ?? '') === $line['addons']
             ) {
                 $item['qty'] += $line['qty'];
                 return;

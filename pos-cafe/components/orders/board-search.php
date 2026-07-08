@@ -29,6 +29,9 @@ declare(strict_types=1);
     <button class="status-tab <?= $r === 'staff' ? 'active' : '' ?>" data-status="PendingPayment" onclick="filterStatus('PendingPayment')">
         New <span class="badge" id="count-PendingPayment">0</span>
     </button>
+    <button class="status-tab" data-status="Unpaid" onclick="filterStatus('Unpaid')">
+        Unpaid <span class="badge" id="count-Unpaid">0</span>
+    </button>
     <?php endif; ?>
     <?php if ($r !== 'staff'): ?>
     <button class="status-tab <?= $r === 'barista' ? 'active' : '' ?>" data-status="Preparing" onclick="filterStatus('Preparing')">

@@ -597,11 +597,9 @@ if (isset($_GET['action']) && $_GET['action'] === 'list') {
 /* Keep sidebar dark always — matching dashboard */
 #appSidebar { background: #111111 !important; border-right: none !important; }
 [data-theme="light"] #appSidebar { background: #111111 !important; border-right: none !important; }
-[data-theme="light"] #appSidebar .nav-link { color: #888 !important; }
-[data-theme="light"] #appSidebar .nav-link:hover { color: #d1904b !important; }
-[data-theme="light"] #appSidebar .nav-link.active { color: #d1904b !important; }
-[data-theme="light"] #appSidebar .group-label { color: #888 !important; }
-[data-theme="light"] #appSidebar .group-label:hover { color: #f5f5f5 !important; }
+[data-theme="light"] #appSidebar .nav-link { color: #9aa1ac !important; }
+[data-theme="light"] #appSidebar .nav-link:hover { color: #5eead4 !important; }
+[data-theme="light"] #appSidebar .nav-link.active { color: #ffffff !important; }
 </style>
 
 <div class="vo-main-col" id="mainContent">

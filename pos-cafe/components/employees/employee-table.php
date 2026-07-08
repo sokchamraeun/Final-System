@@ -3,6 +3,8 @@ declare(strict_types=1);
 /* Employee table. component('employees/employee-table', ['rows' => $rows, 'canManage' => bool]); */
 $rows      = $rows      ?? [];
 $canManage = $canManage ?? false;
+$page      = (int) ($page    ?? 1);
+$perPage   = (int) ($perPage ?? PER_PAGE);
 
 if (!$rows) {
     component('common/empty-state', [
@@ -17,6 +19,7 @@ if (!$rows) {
   <table class="w-full text-sm">
     <thead>
       <tr class="border-b border-slate-100 bg-slate-50 text-left text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+        <th class="px-5 py-3">No#</th>
         <th class="px-5 py-3">Name</th>
         <th class="px-5 py-3">Phone</th>
         <th class="px-5 py-3">Job Title</th>
@@ -26,9 +29,19 @@ if (!$rows) {
       </tr>
     </thead>
     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-      <?php foreach ($rows as $r): ?>
+      <?php foreach ($rows as $i => $r): ?>
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-        <td class="px-5 py-3 font-medium text-slate-700 dark:text-slate-200"><?= e($r['name'] ?? '') ?></td>
+        <td class="px-5 py-3 text-slate-500 dark:text-slate-400"><?= ($page - 1) * $perPage + $i + 1 ?></td>
+        <td class="px-5 py-3">
+          <div class="flex items-center gap-3">
+            <?php if (!empty($r['photo'])): ?>
+            <img src="<?= e(root_url($r['photo'])) ?>" alt="" class="h-9 w-9 shrink-0 rounded-full border border-slate-200 object-cover dark:border-slate-700">
+            <?php else: ?>
+            <div class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand/10 text-xs font-bold text-brand"><?= e(strtoupper(substr((string) ($r['name'] ?? '?'), 0, 1))) ?></div>
+            <?php endif; ?>
+            <span class="font-medium text-slate-700 dark:text-slate-200"><?= e($r['name'] ?? '') ?></span>
+          </div>
+        </td>
         <td class="px-5 py-3 text-slate-600 dark:text-slate-300"><?= e($r['phone'] ?? '—') ?></td>
         <td class="px-5 py-3 text-slate-600 dark:text-slate-300"><?= e($r['job_title'] ?? '—') ?></td>
         <td class="px-5 py-3 text-slate-600 dark:text-slate-300"><?= isset($r['salary']) ? money($r['salary']) : '—' ?></td>

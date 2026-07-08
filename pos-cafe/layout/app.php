@@ -46,7 +46,7 @@ declare(strict_types=1);
   <?php require POS_ROOT . '/components/sidebar/index.php'; ?>
 
   <!-- Main column -->
-  <div class="flex flex-1 flex-col min-w-0 lg:ml-[242px]">
+  <div class="flex flex-1 flex-col min-w-0 lg:ml-[260px]">
 
     <!-- Sticky top navbar -->
     <header class="sticky top-0 z-20 flex h-[72px] items-center gap-4 border-b border-slate-200 bg-white/90 px-4 backdrop-blur dark:border-slate-800 dark:bg-slate-900/90 sm:px-6">

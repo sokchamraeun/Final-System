@@ -56,11 +56,28 @@ final class Order
     public function find(int $id): ?array
     {
         return $this->db->first(
-            "SELECT o.*, u.username AS served_by
+            "SELECT o.*, u.username AS served_by,
+                    c.phone AS customer_phone, c.email AS customer_email,
+                    oc.cancel_reason, oc.cancelled_by, oc.cancelled_at,
+                    orf.refund_reason, orf.refund_amount, orf.refunded_by, orf.refunded_at
              FROM orders o
              LEFT JOIN users u ON u.user_id = o.user_id
+             LEFT JOIN customers c ON c.customer_id = o.customer_id
+             LEFT JOIN order_cancellations oc ON oc.order_id = o.order_id
+             LEFT JOIN order_refunds orf ON orf.order_id = o.order_id
              WHERE o.order_id = ? LIMIT 1",
             [$id]
+        );
+    }
+
+    public function items(int $orderId): array
+    {
+        return $this->db->all(
+            "SELECT item_id, product_name, price, quantity, sweetness, ice, sugar, milk, size_label
+             FROM order_items
+             WHERE order_id = ?
+             ORDER BY item_id",
+            [$orderId]
         );
     }
 }

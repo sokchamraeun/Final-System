@@ -49,12 +49,10 @@ $val = static fn(string $k, $d = '') => e($category[$k] ?? $d);
 
   <div>
     <label class="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Image</label>
-    <?php if ($isEdit && !empty($category['image'])): ?>
-    <div class="mb-3">
-      <img src="<?= e(root_url($category['image'])) ?>" alt="" class="h-20 w-20 rounded-lg border border-slate-200 object-cover dark:border-slate-700">
+    <div class="mb-3" id="imagePreviewWrap" <?= ($isEdit && !empty($category['image'])) ? '' : 'style="display:none"' ?>>
+      <img src="<?= ($isEdit && !empty($category['image'])) ? e(root_url($category['image'])) : '' ?>" alt="" id="imagePreview" class="h-20 w-20 rounded-lg border border-slate-200 object-cover dark:border-slate-700">
     </div>
-    <?php endif; ?>
-    <input type="file" name="image" accept="image/jpeg,image/png,image/webp,image/gif"
+    <input type="file" name="image" id="imageInput" accept="image/jpeg,image/png,image/webp,image/gif"
            class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-brand-600 focus:border-brand focus:ring-2 focus:ring-brand/30 dark:border-slate-700 dark:bg-slate-800">
     <input type="hidden" name="existing_image" value="<?= $val('image') ?>">
   </div>
@@ -85,3 +83,22 @@ $val = static fn(string $k, $d = '') => e($category[$k] ?? $d);
   })();
 </script>
 <?php endif; ?>
+
+<script>
+  (function () {
+    var input   = document.getElementById('imageInput');
+    var wrap    = document.getElementById('imagePreviewWrap');
+    var preview = document.getElementById('imagePreview');
+    if (!input || !wrap || !preview) return;
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        preview.src = e.target.result;
+        wrap.style.display = '';
+      };
+      reader.readAsDataURL(file);
+    });
+  })();
+</script>

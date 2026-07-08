@@ -9,7 +9,7 @@ $isEdit   = !empty($employee['employee_id']);
 $val = static fn(string $k, $d = '') => e($employee[$k] ?? $d);
 $shifts = ['Morning', 'Afternoon', 'Evening', 'Night', 'Swing', 'Full-time'];
 ?>
-<form method="POST" action="<?= e($action) ?>" class="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<form method="POST" action="<?= e($action) ?>" enctype="multipart/form-data" class="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
   <?= csrf_field() ?>
 
   <?php if ($errors): ?>
@@ -77,9 +77,17 @@ $shifts = ['Morning', 'Afternoon', 'Evening', 'Night', 'Swing', 'Full-time'];
     </div>
 
     <div class="sm:col-span-2">
-      <label class="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Photo URL</label>
-      <input type="text" name="photo" value="<?= $val('photo') ?>" placeholder="images/staff/photo.jpg"
-             class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 dark:border-slate-700 dark:bg-slate-800">
+      <label class="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Avatar</label>
+      <div class="mb-3 flex items-center gap-3" id="avatarPreviewWrap">
+        <img src="<?= (!empty($employee['photo'])) ? e(root_url($employee['photo'])) : '' ?>" alt="" id="avatarPreview"
+             class="h-16 w-16 rounded-full border border-slate-200 object-cover dark:border-slate-700 <?= empty($employee['photo']) ? 'hidden' : '' ?>">
+        <div id="avatarInitials" class="grid h-16 w-16 place-items-center rounded-full bg-brand/10 text-lg font-bold text-brand <?= !empty($employee['photo']) ? 'hidden' : '' ?>">
+          <?= e(strtoupper(substr((string) ($employee['name'] ?? '?'), 0, 1))) ?>
+        </div>
+      </div>
+      <input type="file" name="photo_file" id="avatarInput" accept="image/jpeg,image/png,image/webp,image/gif"
+             class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-brand file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-brand-600 focus:border-brand focus:ring-2 focus:ring-brand/30 dark:border-slate-700 dark:bg-slate-800">
+      <input type="hidden" name="existing_photo" value="<?= $val('photo') ?>">
     </div>
   </div>
 
@@ -90,3 +98,23 @@ $shifts = ['Morning', 'Afternoon', 'Evening', 'Night', 'Swing', 'Full-time'];
     </button>
   </div>
 </form>
+
+<script>
+  (function () {
+    var input    = document.getElementById('avatarInput');
+    var preview  = document.getElementById('avatarPreview');
+    var initials = document.getElementById('avatarInitials');
+    if (!input || !preview || !initials) return;
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function (e) {
+        preview.src = e.target.result;
+        preview.classList.remove('hidden');
+        initials.classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+    });
+  })();
+</script>

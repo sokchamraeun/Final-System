@@ -40,6 +40,23 @@ if ($_cp_fpid > 0 && $_cp_fname === '') {
         if ($_fp_r = $_fp_s->get_result()->fetch_assoc()) { $_cp_fname = $_fp_r['name']; $_cp_fprice = (float)$_fp_r['price']; }
         $_fp_s->close(); }
 }
+/* ── Per-item discount badge lookup (display only — cart price is already the real charge) ── */
+$cp_item_badges = [];
+$_cart_pids = array_unique(array_filter(array_map(fn($it) => (int)($it['product_id'] ?? 0), $cart)));
+if ($_cart_pids) {
+    $_ph = implode(',', array_fill(0, count($_cart_pids), '?'));
+    $_bs = $conn->prepare("SELECT product_id, badge_text FROM products WHERE product_id IN ($_ph)");
+    $_bs->bind_param(str_repeat('i', count($_cart_pids)), ...$_cart_pids);
+    $_bs->execute();
+    $_br = $_bs->get_result();
+    while ($_brow = $_br->fetch_assoc()) {
+        $bt = (string)($_brow['badge_text'] ?? '');
+        if ($bt !== '' && preg_match('/(\d{1,2})\s*%/', $bt, $m)) {
+            $cp_item_badges[(int)$_brow['product_id']] = min(90, (int)$m[1]);
+        }
+    }
+}
+
 $cp_cheapest_name  = ($cp_cheapest_idx >= 0) ? ($cart[$cp_cheapest_idx]['product_name'] ?? '') : '';
 $cp_cheapest_price = ($cp_cheapest_idx >= 0 && $cp_min_price < PHP_FLOAT_MAX) ? $cp_min_price : 0.0;
 $cp_free_name  = ($_cp_fpid > 0 && $_cp_fname !== '') ? $_cp_fname : $cp_cheapest_name;
@@ -128,11 +145,12 @@ while ($_cat_row = $_cat_res->fetch_assoc()) {
     $catImages[$_cat_row['slug']]  = $_cat_row['image'];
 }
 
-$products = []; $flat_products = [];
+$products = []; $flat_products = []; $promo_products = [];
 
 while ($row = mysqli_fetch_assoc($result)) {
     $products[$row['category']][] = $row;
     $flat_products[] = $row;
+    if (!empty($row['badge_text'])) $promo_products[] = $row;
 }
 
 /* â”€â”€ SIZES PER PRODUCT (for sized products: has_sizes=1) â”€â”€ */
@@ -200,7 +218,7 @@ if (!empty($flat_products)) {
 <body>
 
 <?php require POS_ROOT . '/components/sidebar/index.php'; ?>
-<div class="flex flex-1 flex-col min-w-0 overflow-hidden lg:ml-[242px]">
+<div class="flex flex-1 flex-col min-w-0 overflow-hidden lg:ml-[260px]">
 
 <?php if (!empty($_SESSION['stock_warning'])): $__sw = $_SESSION['stock_warning']; unset($_SESSION['stock_warning']); ?>
 <div id="stockWarn" style="max-width:1200px;margin:14px auto 0;padding:13px 16px;display:flex;gap:12px;align-items:flex-start;
@@ -231,13 +249,11 @@ if (!empty($flat_products)) {
 
 <div class="pos-layout">
   <div class="menu-panel" id="menuPanel">
-    <?php if (!$is_price_sort): ?>
-      <?php component('menu/categories', ['categories' => $categories, 'products' => $products, 'catIcons' => $catIcons, 'catImages' => $catImages]) ?>
-    <?php endif; ?>
+      <?php component('menu/categories', ['categories' => $categories, 'products' => $products, 'catIcons' => $catIcons, 'catImages' => $catImages, 'search_term' => $search_term, 'sort' => $sort, 'top_sellers' => $top_sellers, 'promo_products' => $promo_products]) ?>
     <div class="menu-scroll" id="menuScroll">
       <main class="menu-main">
         <?php component('menu/top-sellers', ['top_sellers' => $top_sellers, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct]) ?>
-        <?php component('menu/product-grid', ['is_price_sort' => $is_price_sort, 'flat_products' => $flat_products, 'products' => $products, 'categories' => $categories, 'catIcons' => $catIcons, 'sort' => $sort, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct, 'search_term' => $search_term]) ?>
+        <?php component('menu/product-grid', ['is_price_sort' => $is_price_sort, 'flat_products' => $flat_products, 'products' => $products, 'promo_products' => $promo_products, 'top_sellers' => $top_sellers, 'categories' => $categories, 'catIcons' => $catIcons, 'sort' => $sort, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct, 'search_term' => $search_term]) ?>
       </main>
     </div>
   </div>
@@ -246,7 +262,8 @@ if (!empty($flat_products)) {
     'cp_buy3' => $cp_buy3, 'cp_free_name' => $cp_free_name, 'cp_free_price' => $cp_free_price,
     'cp_hh' => $cp_hh, 'cp_manual' => $cp_manual, 'cp_manual_label' => $cp_manual_label,
     'cp_after' => $cp_after, 'cp_tax' => $cp_tax, 'cp_total' => $cp_total,
-    'linked_loyalty' => $linked_loyalty, 'add_to_order_mode' => $add_to_order_mode
+    'linked_loyalty' => $linked_loyalty, 'add_to_order_mode' => $add_to_order_mode,
+    'cp_item_badges' => $cp_item_badges,
   ]) ?>
 </div>
 

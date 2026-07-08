@@ -7,7 +7,7 @@ $sugarByProduct = $sugarByProduct ?? [];
 $milkByProduct  = $milkByProduct  ?? [];
 ?>
 <?php if (!empty($top_sellers)): ?>
-<section class="top-sellers">
+<section class="top-sellers cat-section" id="cat-top-sellers">
   <div class="section-header">
     <h2><i class="fa-solid fa-fire" style="color:#e74c3c;"></i> Top Sellers</h2>
   </div>
@@ -28,22 +28,33 @@ $milkByProduct  = $milkByProduct  ?? [];
      data-product-milk-levels='<?= htmlspecialchars(json_encode($milkByProduct[(int)$t['product_id']] ?? []), ENT_QUOTES) ?>'
      data-is-bestseller="<?= $t['name']===$bestSellerName?'1':'0' ?>"
          role="button" tabindex="0">
+      <?php
+        $tsBadge = (string) ($t['badge_text'] ?? '');
+        $tsPct   = 0;
+        if ($tsBadge !== '' && preg_match('/(\d{1,2})\s*%/', $tsBadge, $tsm)) $tsPct = min(90, (int) $tsm[1]);
+        $tsPrice = (float) $t['price'];
+        $tsOld   = $tsPct > 0 ? $tsPrice / (1 - $tsPct / 100) : null;
+        $tsSizes = $sizesByProduct[(int) $t['product_id']] ?? [];
+        $tsSizeLine = $tsSizes ? implode(' / ', array_map(fn($s) => $s['label'], $tsSizes)) : 'Regular';
+      ?>
       <div class="card-img">
-        <?php if (!empty($t['badge_text'])): ?>
-        <span class="product-badge"><?= e($t['badge_text']) ?></span>
-        <?php endif; ?>
+        <?php if ($tsPct > 0): ?><span class="product-badge badge-discount"><?= (int) $tsPct ?>% OFF</span>
+        <?php elseif ($tsBadge !== ''): ?><span class="product-badge"><?= e($tsBadge) ?></span><?php endif; ?>
         <img src="<?= e(root_url($t['image'])) ?>" loading="lazy" alt="<?= e($t['name']) ?>">
       </div>
       <div class="card-info">
         <div class="card-name"><?= e($t['name']) ?></div>
         <div class="seller-rank"><?= $idx===0 ? '&#x1F3C6; #1 Seller' : '&#x1F525; Top Pick' ?></div>
-        <hr class="card-divider">
+        <div class="card-size-line">Size: <?= e($tsSizeLine) ?></div>
         <div class="card-bottom">
-          <div class="card-price">$<?= number_format($t['price'], 2) ?></div>
+          <div class="card-price-row">
+            <?php if ($tsOld !== null): ?><span class="card-price-old">$<?= number_format($tsOld, 2) ?></span><?php endif; ?>
+            <span class="card-price<?= $tsOld !== null ? ' discounted' : '' ?>">$<?= number_format($tsPrice, 2) ?></span>
+          </div>
           <?php if ((int)($t['has_sizes'] ?? 0) === 1): ?>
-          <button class="btn-add-circle" onclick="event.stopPropagation(); openModalFromCard(this.closest('.product-card'));">+</button>
+          <button class="btn-add-full" onclick="event.stopPropagation(); openModalFromCard(this.closest('.product-card'));"><i class="fa-solid fa-plus"></i> Add</button>
           <?php else: ?>
-          <button class="btn-add-circle" onclick="event.stopPropagation(); quickAdd(<?= (int)$t['product_id'] ?>, <?= (float)$t['price'] ?>);">+</button>
+          <button class="btn-add-full" onclick="event.stopPropagation(); quickAdd(<?= (int)$t['product_id'] ?>, <?= (float)$t['price'] ?>);"><i class="fa-solid fa-plus"></i> Add</button>
           <?php endif; ?>
         </div>
       </div>

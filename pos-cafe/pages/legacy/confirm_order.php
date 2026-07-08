@@ -1,6 +1,23 @@
 <?php
 require __DIR__ . '/../../../auth.php';
 
+// ── AJAX-aware error helper: returns JSON when request is AJAX ──
+function ajax_die(string $message): never {
+    $is_ajax = !empty($_GET['ajax'])
+        || (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest');
+    if ($is_ajax) {
+        http_response_code(400);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $message]);
+        exit;
+    }
+    die($message);
+}
+
+// Convenience flag — reuse the same logic
+$is_ajax = !empty($_GET['ajax'])
+    || (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest');
+
 // ── Migrate: add order_type and completed_at if missing ──
 if ($conn->query("SHOW COLUMNS FROM orders LIKE 'order_type'")->num_rows === 0) {
     $conn->query("ALTER TABLE orders ADD COLUMN order_type ENUM('drink_in','drink_out') NOT NULL DEFAULT 'drink_in'");
@@ -15,12 +32,12 @@ if (empty($_SESSION['cart'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: cart.php");
+    header("Location: menu.php");
     exit;
 }
 
 if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'])) {
-    die("Invalid request. Please try again from the cart page.");
+    ajax_die("Invalid request. Please try again from the cart page.");
 }
 
 $customer_name = trim($_POST['customer_name'] ?? '');
@@ -41,30 +58,8 @@ if (!empty($table_number)) {
     $s->execute();
     $dup = $s->get_result()->fetch_assoc();
     if ($dup) {
-        $by = $dup['customer_name'] ? ' (' . htmlspecialchars($dup['customer_name']) . ')' : '';
-        die('<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Stand In Use</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Poppins,sans-serif;background:#fdf4f4;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{background:#fff;border:1.5px solid #f5c6cb;border-radius:18px;padding:40px 36px;max-width:440px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(220,53,69,.1)}
-.icon{font-size:52px;color:#dc3545;margin-bottom:16px}
-h1{font-size:22px;font-weight:700;color:#1a1410;margin-bottom:8px}
-p{font-size:14px;color:#5a4a3a;line-height:1.6;margin-bottom:6px}
-.highlight{display:inline-block;margin:12px 0;padding:10px 18px;background:#fff3cd;border:1px solid #ffc107;border-radius:10px;color:#856404;font-size:13px;font-weight:600}
-.btn{display:inline-flex;align-items:center;gap:8px;margin-top:20px;padding:12px 28px;background:#d1904b;color:#fff;border:none;border-radius:50px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;font-family:Poppins,sans-serif;transition:all .2s}
-.btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
-</style></head><body>
-<div class="card">
-  <div class="icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
-  <h1>Stand Already In Use</h1>
-  <p>Stand number <strong>' . htmlspecialchars($table_number) . '</strong> is currently assigned to another active order.</p>
-  <div class="highlight"><i class="fa-solid fa-ticket"></i> Order #' . htmlspecialchars($dup['daily_order_no']) . $by . ' &mdash; ' . htmlspecialchars($dup['status']) . '</div>
-  <p>Please give the customer a different stand, or wait until the current order is completed.</p>
-  <a href="javascript:history.back()" class="btn"><i class="fa-solid fa-arrow-left"></i> Go Back</a>
-</div>
-</body></html>');
+        $by = $dup['customer_name'] ? ' (' . $dup['customer_name'] . ')' : '';
+        ajax_die("Stand number {$table_number} is in use by Order #{$dup['daily_order_no']}{$by} ({$dup['status']}).");
     }
 }
 
@@ -74,11 +69,11 @@ $payment_references = isset($_POST['payment_references']) ? $_POST['payment_refe
 
 // ── VALIDATION: payment methods must not mix paylater with others ──
 if (in_array('paylater', $payment_methods) && count($payment_methods) > 1) {
-    die("Pay Later cannot be combined with other payment methods. <a href='cart.php'>Go back</a>");
+    ajax_die("Pay Later cannot be combined with other payment methods.");
 }
 // ── VALIDATION: riel cannot be combined with other payment methods ──
 if (in_array('riel', $payment_methods) && count($payment_methods) > 1) {
-    die("Riel payment cannot be combined with other payment methods. <a href='cart.php'>Go back</a>");
+    ajax_die("Riel payment cannot be combined with other payment methods.");
 }
 
 // ── EXISTING ORDER (add more items) ──
@@ -219,12 +214,45 @@ if ($existing_order_id > 0) {
         $_SESSION['cart'] = [];
         unset($_SESSION['add_to_order_id'], $_SESSION['add_to_daily_no'], $_SESSION['paylater_reopen']);
 
-        header("Location: payment_paylater.php?order_id=" . $existing_order_id);
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            $stmt = $conn->prepare("SELECT * FROM orders WHERE order_id = ?");
+            $stmt->bind_param("i", $existing_order_id);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            $rec = ['success' => true, 'added_to_order' => true, 'order_id' => $existing_order_id];
+            if ($row) {
+                $rec['daily_no'] = $row['daily_order_no'];
+                $rec['customer_name'] = $row['customer_name'];
+                $rec['total'] = (float)$row['total'];
+                $rec['order_type'] = $row['order_type'];
+                $rec['table_number'] = $row['table_number'];
+                $rec['status'] = $row['status'];
+                $rec['employee_name'] = $row['employee_name'];
+                $rec['payment_method'] = $row['payment_method'];
+                $rec['promotion_discount'] = (float)$row['promotion_discount'];
+                $rec['manual_discount'] = (float)$row['manual_discount'];
+                $rec['manual_discount_reason'] = $row['manual_discount_reason'];
+                $rec['tax_rate'] = (float)TAX_RATE;
+            }
+            $stmt_i = $conn->prepare("SELECT product_name, price, quantity, sweetness, ice, sugar, milk, size_label FROM order_items WHERE order_id = ?");
+            $stmt_i->bind_param("i", $existing_order_id);
+            $stmt_i->execute();
+            $rec['items'] = $stmt_i->get_result()->fetch_all(MYSQLI_ASSOC);
+            echo json_encode($rec);
+            exit;
+        }
+        header("Location: orders?created=" . $existing_order_id);
         exit;
 
     } catch (Exception $e) {
         $conn->rollback();
         unset($_SESSION['paylater_reopen']);
+        if ($is_ajax) {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            exit;
+        }
         header("Location: menu.php?error=add_failed");
         exit;
     }
@@ -297,7 +325,7 @@ foreach ($payment_amounts as $amt) {
 }
 
 if (abs($total_paid - $total) > 0.01) {
-    die("Payment amount mismatch. Expected $" . number_format($total, 2) . ", got $" . number_format($total_paid, 2) . ". <a href='cart.php'>Go back</a>");
+    ajax_die("Payment amount mismatch. Expected $" . number_format($total, 2) . ", got $" . number_format($total_paid, 2) . ".");
 }
 
 // ── ORDER STATUS LOGIC ──
@@ -500,7 +528,8 @@ try {
 
     $conn->commit();
     _stash_stock_warning($stock_warnings);
-    unset($_SESSION['csrf_token']);
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    $_SESSION['last_cart_backup'] = $_SESSION['cart'];
     $_SESSION['cart'] = [];
     unset($_SESSION['manual_discount']);
     unset($_SESSION['cart_started_at']);
@@ -542,21 +571,100 @@ try {
         unset($_SESSION['loyalty_card_id']);
     }
 
-    // ── REDIRECT ──
-    if ($has_bakong) {
+    // ── REDIRECT / JSON RESPONSE ──
+    if ($is_ajax) {
+        header('Content-Type: application/json');
+        $receipt = [
+            'success'       => true,
+            'order_id'      => $order_id,
+            'daily_no'      => $daily_no,
+            'customer_name' => $customer_name,
+            'subtotal'      => round($subtotal, 2),
+            'total'         => $total,
+            'order_type'    => $order_type,
+            'table_number'  => $table_number,
+            'status'        => $order_status,
+            'token_number'  => $token_number,
+            'employee_name' => $employee_name,
+            'payment_method' => $primary_method,
+            'promotion_discount' => $total_discount,
+            'manual_discount'    => $manual_discount_co,
+            'manual_discount_reason' => $manual_reason_co,
+            'tax_rate'      => (float)TAX_RATE,
+            'csrf_token'    => $_SESSION['csrf_token'],
+            'payments'      => [],
+        ];
+        if (!empty($payment_methods)) {
+            for ($i = 0; $i < count($payment_methods); $i++) {
+                $receipt['payments'][] = [
+                    'method'    => $payment_methods[$i],
+                    'amount'    => (float)($payment_amounts[$i] ?? 0),
+                    'reference' => $payment_references[$i] ?? '',
+                ];
+            }
+        }
+        $stmt = $conn->prepare("SELECT product_name, price, quantity, sweetness, ice, sugar, milk, size_label FROM order_items WHERE order_id = ?");
+        $stmt->bind_param("i", $order_id);
+        $stmt->execute();
+        $receipt['items'] = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        // ── BAKONG QR ──
+        if ($has_bakong && !empty($payment_amounts)) {
+            $bakQrAmount = (float)$payment_amounts[0];
+            if ($bakQrAmount > 0) {
+                try {
+                    require __DIR__ . '/../../../bakong-khqr-php-main/vendor/autoload.php';
+                    $bakCfg = require __DIR__ . '/../../../bakong_config.php';
+                    $bi = new \KHQR\Models\IndividualInfo(
+                        bakongAccountID: $bakCfg['bakong_id'],
+                        merchantName: $bakCfg['merchant_name'],
+                        merchantCity: $bakCfg['merchant_city'],
+                        currency: $bakCfg['currency'],
+                        amount: $bakQrAmount,
+                        billNumber: 'ORDER_' . $order_id,
+                        storeLabel: 'ObsidianCafe',
+                        terminalLabel: 'POS1',
+                        mobileNumber: $bakCfg['mobile_number'],
+                        expirationTimestamp: strval((time() + 15 * 60) * 1000)
+                    );
+                    $bakResp = \KHQR\BakongKHQR::generateIndividual($bi);
+                    if (($bakResp->status['code'] ?? 1) === 0 && !empty($bakResp->data['qr']) && !empty($bakResp->data['md5'])) {
+                        $qrString = $bakResp->data['qr'];
+                        $qrMd5    = $bakResp->data['md5'];
+                        $receipt['qr_url'] = 'https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=' . urlencode($qrString);
+                        $stmtM = $conn->prepare("UPDATE orders SET bakong_md5 = ? WHERE order_id = ?");
+                        $stmtM->bind_param("si", $qrMd5, $order_id);
+                        $stmtM->execute();
+                    }
+                } catch (\Exception $e) {
+                    // QR failure — order still succeeded
+                }
+            }
+        }
+
+        echo json_encode($receipt);
+        exit;
+    }
+    // Non-AJAX: preserve old redirect behaviour per payment method
+    if ($has_bakong && !$has_paylater) {
         header("Location: payment.php?order_id=" . $order_id);
-    } elseif ($has_paylater) {
-        header("Location: payment_paylater.php?order_id=" . $order_id);
-    } else {
+    } elseif (!$has_bakong && $primary_method !== 'paylater') {
         header("Location: payment_cash.php?order_id=" . $order_id);
+    } else {
+        header("Location: orders?created=" . $order_id);
     }
     exit;
 
 } catch (Exception $e) {
     $conn->rollback();
+    if ($is_ajax) {
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        exit;
+    }
     echo "<h1 style='color:red;font-family:sans-serif'>Order Failed</h1>";
     echo "<p>" . htmlspecialchars($e->getMessage()) . "</p>";
-    echo "<p><a href='cart.php'>Back to Cart</a></p>";
+    echo "<p><a href='menu.php'>Back to Menu</a></p>";
     exit;
 }
 

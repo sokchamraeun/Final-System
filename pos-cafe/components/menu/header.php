@@ -12,22 +12,7 @@ $_show_kitchen_btn = ($_SESSION['role'] ?? '') === 'barista';
     </button>
   </div>
 
-  <div class="header-center">
-    <form class="search-form" method="GET" id="searchForm">
-      <div class="search-inner">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" name="search" placeholder="Search drinks..." value="<?= e($search_term) ?>" id="searchInput" autocomplete="off">
-        <?php if (!empty($search_term)): ?>
-        <a href="<?= e(url('pages/menu/index.php')) ?>" class="search-clear"><i class="fa-solid fa-xmark"></i></a>
-        <?php endif; ?>
-      </div>
-      <select name="sort" id="sortSelect" class="sort-select">
-        <option value="default" <?= $sort==='default'?'selected':'' ?>>Default</option>
-        <option value="price_low" <?= $sort==='price_low'?'selected':'' ?>>Price: Low â†’ High</option>
-        <option value="price_high" <?= $sort==='price_high'?'selected':'' ?>>Price: High â†’ Low</option>
-      </select>
-    </form>
-  </div>
+  <div class="header-center"></div>
 
   <div class="header-right">
     <div class="brand">

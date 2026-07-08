@@ -102,8 +102,14 @@ function addRow(o) {
     const row = document.createElement("tr");
     row.id = "row-" + o.order_id;
     row.dataset.status = o.status;
+    row.dataset.paymentStatus = o.payment_status;
     row.dataset.orderId = o.order_id;
     row.dataset.employee = o.employee_name || '';
+    row.style.cursor = 'pointer';
+    row.addEventListener('click', function(e) {
+        if (e.target.closest('button')) return;
+        openOrderDetail(o.order_id);
+    });
     row.innerHTML = buildRowInner(o);
     tbody.appendChild(row);
 }
@@ -119,6 +125,7 @@ function updateExistingRow(o) {
     }
 
     row.dataset.status = o.status;
+    row.dataset.paymentStatus = o.payment_status;
     row.dataset.employee = o.employee_name || '';
     row.innerHTML = buildRowInner(o);
 
@@ -148,8 +155,12 @@ function applyFilters() {
 
         if (query) {
             visible = row.textContent.toLowerCase().includes(query);
-        } else if (currentFilter !== 'all' && status !== currentFilter) {
-            visible = false;
+        } else if (currentFilter !== 'all') {
+            if (currentFilter === 'Unpaid') {
+                visible = row.dataset.paymentStatus === 'unpaid';
+            } else {
+                visible = status === currentFilter;
+            }
         }
 
         if (visible && staff && row.dataset.employee !== staff) visible = false;
@@ -184,29 +195,26 @@ function filterStatus(status) {
 
 // ── Update tab counts (always reflects the full loaded set, not the filter) ──
 function updateCounts(data) {
-    const counts = { all: 0, PendingPayment: 0, Paid: 0, Preparing: 0, Completed: 0, Cancelled: 0, Refunded: 0 };
+    const counts = { all: 0, PendingPayment: 0, Paid: 0, Preparing: 0, Completed: 0, Cancelled: 0, Refunded: 0, Unpaid: 0 };
     data.forEach(o => {
         counts.all++;
         if (counts[o.status] !== undefined) counts[o.status]++;
+        if (o.payment_status === 'unpaid') counts.Unpaid++;
     });
     const setCount = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     Object.keys(counts).forEach(k => setCount('count-' + k, counts[k]));
 }
 
-// ── Stat cards: computed from whatever rows are currently visible (search + filters applied) ──
+// ── Stat cards: computed from all loaded orders (ignores search/filter) ──
 function updateStatCards() {
-    const rows = Array.from(document.querySelectorAll('#ordersBody tr[data-order-id]')).filter(r => r.style.display !== 'none');
-    const ids = rows.map(r => Number(r.dataset.orderId));
-    const shown = allOrders.filter(o => ids.includes(o.order_id));
-
-    const paid      = shown.filter(o => o.payment_status === 'paid').length;
-    const unpaid    = shown.filter(o => o.payment_status === 'unpaid').length;
-    const refunded  = shown.filter(o => o.status === 'Refunded').length;
-    const revenue   = shown.filter(o => o.status !== 'Cancelled' && o.status !== 'Refunded')
-                           .reduce((sum, o) => sum + parseFloat(o.total || 0), 0);
+    const paid      = allOrders.filter(o => o.payment_status === 'paid').length;
+    const unpaid    = allOrders.filter(o => o.payment_status === 'unpaid').length;
+    const refunded  = allOrders.filter(o => o.status === 'Refunded').length;
+    const revenue   = allOrders.filter(o => o.status !== 'Cancelled' && o.status !== 'Refunded')
+                               .reduce((sum, o) => sum + parseFloat(o.total || 0), 0);
 
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    setText('stat-shown', shown.length);
+    setText('stat-shown', allOrders.length);
     setText('stat-paid', paid);
     setText('stat-unpaid', unpaid);
     setText('stat-refunded', refunded);

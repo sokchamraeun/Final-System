@@ -5,6 +5,22 @@ $sizesByProduct = $sizesByProduct ?? [];
 $iceByProduct   = $iceByProduct   ?? [];
 $sugarByProduct = $sugarByProduct ?? [];
 $milkByProduct  = $milkByProduct  ?? [];
+
+/* ── Discount badge (e.g. "30% Off") drives a struck-through original price.
+   Purely a display computation — products.price already holds the real,
+   charged amount; nothing here changes what the cart bills. ── */
+$badgeText   = (string) ($p['badge_text'] ?? '');
+$discountPct = 0;
+if ($badgeText !== '' && preg_match('/(\d{1,2})\s*%/', $badgeText, $m)) {
+    $discountPct = min(90, (int) $m[1]);
+}
+$cardPrice    = (float) $p['price'];
+$cardOldPrice = $discountPct > 0 ? $cardPrice / (1 - $discountPct / 100) : null;
+
+$cardSizes = $sizesByProduct[(int) $p['product_id']] ?? [];
+$sizeLine  = $cardSizes
+    ? implode(' / ', array_map(fn($s) => $s['label'], $cardSizes))
+    : 'Regular';
 ?>
 <?php if ($p['low_count'] > 0): ?>
 <div class="product-card disabled">
@@ -28,20 +44,23 @@ $milkByProduct  = $milkByProduct  ?? [];
      data-is-bestseller="<?= $p['name']===$bestSellerName?'1':'0' ?>"
      role="button" tabindex="0">
   <div class="card-img">
-    <?php if (!empty($p['badge_text'])): ?><span class="product-badge"><?= e($p['badge_text']) ?></span><?php endif; ?>
+    <?php if ($discountPct > 0): ?><span class="product-badge badge-discount"><?= (int) $discountPct ?>% OFF</span>
+    <?php elseif (!empty($p['badge_text'])): ?><span class="product-badge"><?= e($p['badge_text']) ?></span><?php endif; ?>
     <?php if ($p['name']===$bestSellerName): ?><span class="badge-bestseller">&#x2605; Best Seller</span><?php endif; ?>
     <img src="<?= e(root_url($p['image'])) ?>" loading="lazy" alt="<?= e($p['name']) ?>">
   </div>
   <div class="card-info">
     <div class="card-name"><?= e($p['name']) ?></div>
-    <div class="card-desc"><?= e($p['description']) ?></div>
-    <hr class="card-divider">
+    <div class="card-size-line">Size: <?= e($sizeLine) ?></div>
     <div class="card-bottom">
-      <div class="card-price">$<?= number_format($p['price'], 2) ?></div>
+      <div class="card-price-row">
+        <?php if ($cardOldPrice !== null): ?><span class="card-price-old">$<?= number_format($cardOldPrice, 2) ?></span><?php endif; ?>
+        <span class="card-price<?= $cardOldPrice !== null ? ' discounted' : '' ?>">$<?= number_format($cardPrice, 2) ?></span>
+      </div>
       <?php if ((int)($p['has_sizes'] ?? 0) === 1): ?>
-      <button class="btn-add-circle" onclick="event.stopPropagation(); openModalFromCard(this.closest('.product-card'));">+</button>
+      <button class="btn-add-full" onclick="event.stopPropagation(); openModalFromCard(this.closest('.product-card'));"><i class="fa-solid fa-plus"></i> Add</button>
       <?php else: ?>
-      <button class="btn-add-circle" onclick="event.stopPropagation(); quickAdd(<?= (int)$p['product_id'] ?>, <?= (float)$p['price'] ?>);">+</button>
+      <button class="btn-add-full" onclick="event.stopPropagation(); quickAdd(<?= (int)$p['product_id'] ?>, <?= (float)$p['price'] ?>);"><i class="fa-solid fa-plus"></i> Add</button>
       <?php endif; ?>
     </div>
   </div>
