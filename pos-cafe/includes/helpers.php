@@ -122,6 +122,37 @@ if (!function_exists('is_spa_request')) {
     }
 }
 
+if (!function_exists('medium_size_price')) {
+    /**
+     * Pick the representative base price for a sized product: the price of
+     * the size level named "Medium", falling back to the cheapest entered
+     * size if no Medium row was priced (e.g. the product has no Medium size).
+     *
+     * @param array<int,array{id:int|string,name:string}> $sizeLevels  id => name lookup rows
+     * @param array<int,int|string> $sizeLevelIds  posted size_level_ids[]
+     * @param array<int,int|string> $sizePrices    posted size_prices[], same order as $sizeLevelIds
+     */
+    function medium_size_price(array $sizeLevels, array $sizeLevelIds, array $sizePrices): float
+    {
+        $nameById = [];
+        foreach ($sizeLevels as $sl) {
+            $nameById[(int) $sl['id']] = $sl['name'];
+        }
+
+        $valid = [];
+        foreach ($sizeLevelIds as $i => $slid) {
+            $p = (float) ($sizePrices[$i] ?? 0);
+            if ($p <= 0) continue;
+            $valid[] = $p;
+            if (strtolower($nameById[(int) $slid] ?? '') === 'medium') {
+                return $p;
+            }
+        }
+
+        return $valid ? min($valid) : 0.0;
+    }
+}
+
 if (!function_exists('is_active_nav')) {
     /** True when the current script matches one of the given basenames. */
     function is_active_nav(string ...$names): bool

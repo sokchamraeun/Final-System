@@ -50,6 +50,12 @@ $val = static fn(string $k, $d = '') => e($product[$k] ?? $d);
              class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 dark:border-slate-700 dark:bg-slate-800">
     </div>
 
+    <div class="sm:col-span-2" id="basePriceWrap" style="<?= (int) ($product['has_sizes'] ?? 0) === 1 ? 'display:none' : '' ?>">
+      <label class="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Price</label>
+      <input type="number" step="0.01" min="0" name="price" value="<?= $val('price') ?>"
+             class="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/30 dark:border-slate-700 dark:bg-slate-800">
+    </div>
+
     <div class="sm:col-span-2">
       <label class="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Category</label>
       <select name="category"
@@ -77,7 +83,7 @@ $val = static fn(string $k, $d = '') => e($product[$k] ?? $d);
     <div class="sm:col-span-2">
       <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
         <input type="checkbox" name="has_sizes" value="1" <?= (int) ($product['has_sizes'] ?? 0) === 1 ? 'checked' : '' ?>
-               onchange="document.getElementById('sizeRows').style.display=this.checked?'block':'none'"
+               onchange="document.getElementById('sizeRows').style.display=this.checked?'block':'none'; document.getElementById('basePriceWrap').style.display=this.checked?'none':'block';"
                class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
         Has multiple sizes (S / M / L)
       </label>

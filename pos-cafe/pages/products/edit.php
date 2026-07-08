@@ -55,19 +55,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
         }
+        $hasSizes = isset($_POST['has_sizes']);
+        if ($hasSizes) {
+            $price = medium_size_price($sizeLevels, $_POST['size_level_ids'] ?? [], $_POST['size_prices'] ?? []);
+        } else {
+            $price = (float) input('price', 0);
+        }
+
         $model->update($id, [
             'name'         => input('name'),
-            'price'        => 0.0,
+            'price'        => $price,
             'image'        => $image,
             'category'     => input('category'),
             'category_id'  => (int) input('category_id', 0) ?: null,
             'description'  => input('description'),
             'badge_text'   => input('badge_text'),
-            'has_sizes'    => isset($_POST['has_sizes']) ? 1 : 0,
+            'has_sizes'    => $hasSizes ? 1 : 0,
             'is_available' => isset($_POST['is_available']) ? 1 : 0,
         ]);
 
-        if (isset($_POST['has_sizes'])) {
+        if ($hasSizes) {
             $model->saveSizes($id, $_POST['size_level_ids'] ?? [], $_POST['size_prices'] ?? [], $_POST['size_factors'] ?? []);
         } else {
             $model->saveSizes($id, [], [], []);
