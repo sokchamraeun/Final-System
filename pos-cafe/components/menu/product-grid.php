@@ -9,6 +9,7 @@ $bestSellerName = $bestSellerName ?? null;
 $sizesByProduct = $sizesByProduct ?? [];
 $iceByProduct   = $iceByProduct   ?? [];
 $sugarByProduct = $sugarByProduct ?? [];
+$addonsByProduct = $addonsByProduct ?? [];
 $search_term = $search_term ?? '';
 $promo_products = $promo_products ?? [];
 $top_sellers = $top_sellers ?? [];
@@ -30,7 +31,7 @@ if (!function_exists('cat_anchor_id')) {
   </div>
   <div class="product-grid">
     <?php foreach ($flat_products as $p): ?>
-      <?php $P = $p; component('menu/product-card', ['p' => $P, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct]) ?>
+      <?php $P = $p; component('menu/product-card', ['p' => $P, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct, 'addonsByProduct' => $addonsByProduct]) ?>
     <?php endforeach; ?>
   </div>
 <?php elseif (!empty($products)): ?>
@@ -46,7 +47,7 @@ if (!function_exists('cat_anchor_id')) {
     </div>
     <div class="product-grid">
     <?php foreach ($promo_products as $p): ?>
-      <?php $P = $p; component('menu/product-card', ['p' => $P, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct]) ?>
+      <?php $P = $p; component('menu/product-card', ['p' => $P, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct, 'addonsByProduct' => $addonsByProduct]) ?>
     <?php endforeach; ?>
     </div>
   </section>
@@ -67,7 +68,7 @@ if (!function_exists('cat_anchor_id')) {
     </div>
     <div class="product-grid">
     <?php foreach ($products[$key] as $p): ?>
-      <?php $P = $p; component('menu/product-card', ['p' => $P, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct]) ?>
+      <?php $P = $p; component('menu/product-card', ['p' => $P, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct, 'addonsByProduct' => $addonsByProduct]) ?>
     <?php endforeach; ?>
     </div>
   </section>

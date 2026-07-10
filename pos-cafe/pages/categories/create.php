@@ -38,6 +38,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'image'         => $image,
             'display_order' => (int) input('display_order', 0),
             'is_active'     => isset($_POST['is_active']),
+            'enable_ice'    => !empty($_POST['enable_ice']),
+            'enable_sugar'  => !empty($_POST['enable_sugar']),
+            'enable_milk'   => !empty($_POST['enable_milk']),
+            'enable_addons' => !empty($_POST['enable_addons']),
         ]);
         flash('Category #' . $id . ' created.', 'success');
         redirect(url('pages/categories/index.php'));

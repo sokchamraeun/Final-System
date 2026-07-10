@@ -16,30 +16,30 @@ declare(strict_types=1);
     justify-content: space-between;
     gap: 1rem;
     flex-wrap: wrap;
-    border: 1px solid #99f6e4;
-    background: #fff;
+    border: 1px solid var(--mint-border);
+    background: var(--card);
     border-radius: 1rem;
     padding: 0.85rem 1.25rem;
     margin-bottom: 1.25rem;
     font-size: 0.9rem;
-    color: #334155;
+    color: var(--ink);
 }
 
 .detail-customer-bar .customer-name {
-    color: #64748b;
+    color: var(--muted);
 }
 
 .detail-customer-bar .customer-name b {
-    color: #1e293b;
+    color: var(--ink);
     font-weight: 700;
 }
 
 .detail-customer-bar .print-meta {
-    color: #94a3b8;
+    color: var(--muted-xs);
 }
 
 .detail-customer-bar .print-meta b {
-    color: #334155;
+    color: var(--muted);
 }
 
 .detail-info-row {
@@ -49,30 +49,30 @@ declare(strict_types=1);
     flex-wrap: wrap;
     padding-bottom: 1rem;
     margin-bottom: 1rem;
-    border-bottom: 1px solid #f1f5f9;
+    border-bottom: 1px solid var(--border);
 }
 
 .detail-info-row .info-label {
     font-size: 0.8rem;
     font-weight: 600;
-    color: #64748b;
+    color: var(--muted);
     margin-right: 0.5rem;
 }
 
 .detail-select {
-    border: 1px solid #99f6e4;
+    border: 1px solid var(--mint-border);
     border-radius: 0.75rem;
     padding: 0.4rem 0.9rem;
     font-size: 0.85rem;
     font-weight: 700;
-    color: #0f766e;
-    background: #fff;
+    color: var(--teal);
+    background: var(--card);
     outline: none;
     cursor: pointer;
 }
 
 .detail-select:focus {
-    border-color: #14b8a6;
+    border-color: var(--teal-light);
     box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15);
 }
 
@@ -86,9 +86,9 @@ declare(strict_types=1);
     text-align: left;
     font-size: 0.78rem;
     font-weight: 700;
-    color: #475569;
+    color: var(--muted);
     padding: 0.5rem 0.25rem 0.75rem;
-    border-bottom: 2px solid #ccfbf1;
+    border-bottom: 2px solid var(--mint-border);
 }
 
 .detail-items-table thead th.align-right {
@@ -97,7 +97,7 @@ declare(strict_types=1);
 
 .detail-items-table tbody td {
     padding: 0.85rem 0.25rem;
-    color: #334155;
+    color: var(--ink);
     vertical-align: top;
 }
 
@@ -107,12 +107,12 @@ declare(strict_types=1);
 
 .detail-items-table .item-name {
     font-weight: 700;
-    color: #1e293b;
+    color: var(--ink);
 }
 
 .detail-items-table .subtotal-cell {
     font-weight: 700;
-    color: #0f766e;
+    color: var(--teal);
 }
 
 .detail-summary-row {
@@ -121,20 +121,20 @@ declare(strict_types=1);
     gap: 1.5rem;
     padding: 0.4rem 0.25rem;
     font-size: 0.9rem;
-    color: #64748b;
+    color: var(--muted);
 }
 
 .detail-summary-row.total {
     font-size: 1.05rem;
     font-weight: 800;
-    color: #0f172a;
-    border-top: 1px solid #f1f5f9;
+    color: var(--ink);
+    border-top: 1px solid var(--border);
     margin-top: 0.25rem;
     padding-top: 0.75rem;
 }
 
 .detail-summary-row.total .amount {
-    color: #0f766e;
+    color: var(--teal);
 }
 
 .btn-print-receipt {
@@ -166,25 +166,25 @@ declare(strict_types=1);
     padding: 0.7rem 1.75rem;
     font-weight: 700;
     font-size: 0.9rem;
-    color: #334155;
-    background: #fff;
-    border: 1px solid #e2e8f0;
+    color: var(--ink);
+    background: var(--card);
+    border: 1px solid var(--border);
     cursor: pointer;
     transition: all 0.2s ease;
 }
 
 .btn-close-order:hover {
-    background: #f8fafc;
-    border-color: #cbd5e1;
+    background: var(--surface-2);
+    border-color: var(--border-hi);
 }
 </style>
 
 <!-- Order Detail Modal -->
-<div class="detail-modal fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
+<div class="detail-modal fixed inset-0 z-50 hidden items-center justify-center p-4"
      id="orderDetailModal"
      onclick="if(event.target===this)closeOrderDetail()">
 
-    <div class="detail-modal-content w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+    <div class="detail-modal-content w-full max-w-2xl overflow-hidden rounded-3xl shadow-2xl">
 
         <div class="detail-head flex items-center justify-between bg-gradient-to-r from-teal-600 to-emerald-500 px-7 py-5">
 
@@ -203,7 +203,7 @@ declare(strict_types=1);
 
         <div class="detail-body max-h-[65vh] overflow-y-auto px-7 py-6" id="detailBody"></div>
 
-        <div class="detail-foot flex items-center justify-between border-t border-teal-50 bg-teal-50/50 px-7 py-5" id="detailActions"></div>
+        <div class="detail-foot flex items-center justify-between border-t px-7 py-5" id="detailActions"></div>
 
     </div>
 

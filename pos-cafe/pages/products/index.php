@@ -100,6 +100,23 @@ endif;
 <script>
   var CSRF = <?= json_encode(csrf_token()) ?>;
 
+  function toggleCheckboxes(master) {
+    var box = master.closest('.rounded-xl');
+    if (!box) return;
+    var items = box.querySelectorAll('input[type="checkbox"]');
+    items.forEach(function(cb) { if (cb !== master) cb.checked = master.checked; });
+  }
+
+  function syncSelectAll(cb) {
+    var box = cb.closest('.rounded-xl');
+    if (!box) return;
+    var all = box.querySelectorAll('input[type="checkbox"]');
+    var master = all[0];
+    var checked = 0;
+    all.forEach(function(c) { if (c !== master && c.checked) checked++; });
+    master.checked = checked === all.length - 1;
+  }
+
   function confirmDeleteProduct(id, name) {
     document.getElementById('deleteProductId').value = id;
     document.getElementById('deleteProductName').textContent = name;

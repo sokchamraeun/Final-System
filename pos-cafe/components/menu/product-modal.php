@@ -36,11 +36,12 @@
         <div class="pm-grid2" id="milkPills"></div>
       </div>
 
-      <hr class="pm-divider">
-
-      <div class="pm-section2">
-        <div class="pm-label">Add-ons</div>
-        <div class="pm-addons" id="addonPills"></div>
+      <div id="optAddons" style="display:none">
+        <hr class="pm-divider">
+        <div class="pm-section2">
+          <div class="pm-label">Add-ons</div>
+          <div class="pm-addons" id="addonPills"></div>
+        </div>
       </div>
 
     </div>

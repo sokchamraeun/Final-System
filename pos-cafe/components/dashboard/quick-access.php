@@ -134,7 +134,7 @@ $groupLabel  = fn() => $G . '-group-label';
   <div class="<?= $groupClass() ?>">
     <div class="<?= $groupLabel() ?>"><i class="fa-solid fa-circle-user"></i> Account</div>
     <div class="<?= $gridClass() ?>">
-      <a href="<?= e(root_url('profile.php')) ?>" class="<?= $cardClass() ?>">
+      <a href="<?= e(url('profile')) ?>" class="<?= $cardClass() ?>">
         <i class="fa-solid fa-circle-user"></i> <span>My Profile</span>
       </a>
     </div>

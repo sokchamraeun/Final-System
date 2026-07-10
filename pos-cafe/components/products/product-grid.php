@@ -23,9 +23,10 @@ if (!$products) {
     <thead>
       <tr class="border-b border-slate-100 bg-slate-50/50 text-left text-xs font-semibold uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400">
         <th class="w-10 px-4 py-3 text-center">No.</th>
-        <th class="px-4 py-3">Product</th>
-        <th class="px-4 py-3">Category</th>
+        <th class="px-3 py-3">Product</th>
+        <th class="px-2 py-3">Category</th>
         <th class="px-4 py-3">Sizes</th>
+        <th class="px-4 py-3">Addon</th>
         <th class="px-4 py-3">Milk</th>
         <th class="px-4 py-3">Sugar</th>
         <th class="px-4 py-3">Ice</th>

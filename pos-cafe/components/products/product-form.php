@@ -11,9 +11,11 @@ $iceLevels    = $iceLevels    ?? [];
 $sugarLevels  = $sugarLevels  ?? [];
 $milkLevels   = $milkLevels   ?? [];
 $sizeLevels   = $sizeLevels   ?? [];
+$addons        = $addons        ?? [];
 $selectedIce   = $selectedIce   ?? [];
 $selectedSugar = $selectedSugar ?? [];
 $selectedMilk  = $selectedMilk  ?? [];
+$selectedAddons = $selectedAddons ?? [];
 $selectedSizes  = $selectedSizes  ?? [];
 
 $val = static fn(string $k, $d = '') => e($product[$k] ?? $d);
@@ -63,6 +65,10 @@ $val = static fn(string $k, $d = '') => e($product[$k] ?? $d);
         <option value="">— none —</option>
         <?php foreach ($categories as $c): ?>
           <option value="<?= e($c['slug']) ?>" data-id="<?= (int) $c['category_id'] ?>"
+                  data-enable-ice="<?= (int) ($c['enable_ice'] ?? 1) ?>"
+                  data-enable-sugar="<?= (int) ($c['enable_sugar'] ?? 1) ?>"
+                  data-enable-milk="<?= (int) ($c['enable_milk'] ?? 1) ?>"
+                  data-enable-addons="<?= (int) ($c['enable_addons'] ?? 1) ?>"
                   <?= ($product['category'] ?? '') === $c['slug'] ? 'selected' : '' ?>><?= e($c['name']) ?></option>
         <?php endforeach; ?>
       </select>
@@ -84,7 +90,7 @@ $val = static fn(string $k, $d = '') => e($product[$k] ?? $d);
       <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
         <input type="checkbox" name="has_sizes" value="1" <?= (int) ($product['has_sizes'] ?? 0) === 1 ? 'checked' : '' ?>
                onchange="document.getElementById('sizeRows').style.display=this.checked?'block':'none'; document.getElementById('basePriceWrap').style.display=this.checked?'none':'block';"
-               class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
+               onchange="syncSelectAll(this)" class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
         Has multiple sizes (S / M / L)
       </label>
     </div>
@@ -105,11 +111,13 @@ $val = static fn(string $k, $d = '') => e($product[$k] ?? $d);
       <div class="mb-2 flex items-center gap-2">
         <input type="checkbox" name="size_level_ids[]" value="<?= $slid ?>"
                <?= $checked ? 'checked' : '' ?>
-               class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
+               onchange="syncSelectAll(this)" class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
         <span class="w-16 text-sm font-medium text-slate-600 dark:text-slate-300"><?= e($sl['name']) ?></span>
         <input type="number" step="0.01" min="0" name="size_prices[]" value="<?= e($saved['price'] ?? '') ?>" placeholder="Price"
                class="w-28 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-brand dark:border-slate-600 dark:bg-slate-700">
         <input type="number" step="0.01" min="0" name="size_factors[]" value="<?= e($saved['size_factor'] ?? '1.00') ?>" placeholder="Stock ×"
+               class="w-20 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-brand dark:border-slate-600 dark:bg-slate-700">
+        <input type="number" step="1" min="0" max="90" name="size_promo_pcts[]" value="<?= e($saved['promo_pct'] ?? '') ?>" placeholder="Disc %"
                class="w-20 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-brand dark:border-slate-600 dark:bg-slate-700">
       </div>
       <?php endforeach; ?>
@@ -117,41 +125,56 @@ $val = static fn(string $k, $d = '') => e($product[$k] ?? $d);
   </div>
 
   <!-- Ice, Sugar & Milk Levels -->
-  <div class="grid gap-5 sm:grid-cols-3">
-    <div>
-      <label class="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Ice Levels</label>
+  <div class="grid gap-5 sm:grid-cols-3" id="customizationSection">
+    <div id="iceSection" class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/30">
+      <div class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+        <span>Ice Levels</span>
+        <label class="flex items-center gap-1 text-xs font-normal text-slate-400 cursor-pointer hover:text-brand">
+          <input type="checkbox" onchange="toggleCheckboxes(this)" class="h-3.5 w-3.5 rounded border-slate-300 text-brand focus:ring-brand"> Select All
+        </label>
+      </div>
       <div class="flex flex-wrap gap-3">
         <?php foreach ($iceLevels as $l): ?>
           <label class="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
             <input type="checkbox" name="ice_level_ids[]" value="<?= (int) $l['id'] ?>"
                    <?= in_array((int) $l['id'], $selectedIce, true) ? 'checked' : '' ?>
-                   class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
+                   onchange="syncSelectAll(this)" class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
             <?= e($l['name']) ?>
           </label>
         <?php endforeach; ?>
       </div>
     </div>
-    <div>
-      <label class="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Sugar Levels</label>
+    <div id="sugarSection" class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/30">
+      <div class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+        <span>Sugar Levels</span>
+        <label class="flex items-center gap-1 text-xs font-normal text-slate-400 cursor-pointer hover:text-brand">
+          <input type="checkbox" onchange="toggleCheckboxes(this)" class="h-3.5 w-3.5 rounded border-slate-300 text-brand focus:ring-brand"> Select All
+        </label>
+      </div>
       <div class="flex flex-wrap gap-3">
         <?php foreach ($sugarLevels as $l): ?>
           <label class="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
             <input type="checkbox" name="sugar_level_ids[]" value="<?= (int) $l['id'] ?>"
                    <?= in_array((int) $l['id'], $selectedSugar, true) ? 'checked' : '' ?>
-                   class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
+                   onchange="syncSelectAll(this)" class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
             <?= e($l['name']) ?>
           </label>
         <?php endforeach; ?>
       </div>
     </div>
-    <div>
-      <label class="mb-1.5 block text-sm font-medium text-slate-600 dark:text-slate-300">Milk Levels</label>
+    <div id="milkSection" class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/30">
+      <div class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+        <span>Milk Levels</span>
+        <label class="flex items-center gap-1 text-xs font-normal text-slate-400 cursor-pointer hover:text-brand">
+          <input type="checkbox" onchange="toggleCheckboxes(this)" class="h-3.5 w-3.5 rounded border-slate-300 text-brand focus:ring-brand"> Select All
+        </label>
+      </div>
       <div class="flex flex-wrap gap-3">
         <?php foreach ($milkLevels as $l): ?>
           <label class="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
             <input type="checkbox" name="milk_level_ids[]" value="<?= (int) $l['id'] ?>"
                    <?= in_array((int) $l['id'], $selectedMilk, true) ? 'checked' : '' ?>
-                   class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
+                   onchange="syncSelectAll(this)" class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
             <?= e($l['name']) ?>
           </label>
         <?php endforeach; ?>
@@ -159,8 +182,32 @@ $val = static fn(string $k, $d = '') => e($product[$k] ?? $d);
     </div>
   </div>
 
+  <!-- Add-ons -->
+  <div id="addonSection" class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/30">
+    <div class="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300">
+      <span>Add-ons</span>
+      <label class="flex items-center gap-1 text-xs font-normal text-slate-400 cursor-pointer hover:text-brand">
+        <input type="checkbox" onchange="toggleCheckboxes(this)" class="h-3.5 w-3.5 rounded border-slate-300 text-brand focus:ring-brand"> Select All
+      </label>
+    </div>
+    <?php if (!$addons): ?>
+      <p class="text-sm text-slate-400">No add-ons defined yet. <a href="<?= e(url('pages/addons/create.php')) ?>" class="text-brand hover:underline">Create one</a>.</p>
+    <?php else: ?>
+    <div class="flex flex-wrap gap-3">
+      <?php foreach ($addons as $a): ?>
+        <label class="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+          <input type="checkbox" name="addon_ids[]" value="<?= (int) $a['addon_id'] ?>"
+                 <?= in_array((int) $a['addon_id'], $selectedAddons, true) ? 'checked' : '' ?>
+                 onchange="syncSelectAll(this)" class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
+          <?= e($a['name']) ?> <span class="text-xs text-slate-400">(+$<?= number_format((float) $a['price'], 2) ?>)</span>
+        </label>
+      <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+  </div>
+
   <div class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-    <input type="checkbox" name="is_available" value="1" <?= (int) ($product['is_available'] ?? 1) === 1 ? 'checked' : '' ?> class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
+    <input type="checkbox" name="is_available" value="1" <?= (int) ($product['is_available'] ?? 1) === 1 ? 'checked' : '' ?> onchange="syncSelectAll(this)" class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
     Available on the menu
   </div>
 
@@ -183,7 +230,28 @@ $val = static fn(string $k, $d = '') => e($product[$k] ?? $d);
     var sel = document.querySelector('select[name="category"]');
     var hid = document.getElementById('categoryIdField');
     if (!sel || !hid) return;
-    function sync(){ var o = sel.options[sel.selectedIndex]; hid.value = (o && o.dataset.id) ? o.dataset.id : 0; }
-    sel.addEventListener('change', sync);
+    function syncId(){ var o = sel.options[sel.selectedIndex]; hid.value = (o && o.dataset.id) ? o.dataset.id : 0; }
+
+    function syncCust() {
+      var o = sel.options[sel.selectedIndex];
+      var ice   = document.getElementById('iceSection');
+      var sugar = document.getElementById('sugarSection');
+      var milk  = document.getElementById('milkSection');
+      var addon = document.getElementById('addonSection');
+      var cust  = document.getElementById('customizationSection');
+      var noCat = !o || o.value === '';
+      var showIce   = noCat || o.dataset.enableIce   !== '0';
+      var showSugar = noCat || o.dataset.enableSugar !== '0';
+      var showMilk  = noCat || o.dataset.enableMilk  !== '0';
+      var showAddon = noCat || o.dataset.enableAddons !== '0';
+      if (ice)   ice.style.display   = showIce   ? '' : 'none';
+      if (sugar) sugar.style.display = showSugar ? '' : 'none';
+      if (milk)  milk.style.display  = showMilk  ? '' : 'none';
+      if (addon) addon.style.display = showAddon ? '' : 'none';
+      if (cust) cust.style.display = (showIce || showSugar || showMilk || showAddon) ? '' : 'none';
+    }
+    syncId();
+    syncCust();
+    sel.addEventListener('change', function(){ syncId(); syncCust(); });
   })();
 </script>

@@ -13,7 +13,7 @@ if (!$rows) {
     return;
 }
 ?>
-<div class="overflow-hidden rounded-3xl border border-slate-200/60 bg-white shadow-lg shadow-slate-200/50 dark:border-slate-700/60 dark:bg-slate-900">
+<div class="overflow-hidden rounded-3xl border border-slate-200/60 bg-white dark:border-slate-700/60 dark:bg-slate-900">
   <div class="overflow-x-auto">
     <table class="w-full text-sm">
       <thead>

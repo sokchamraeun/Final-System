@@ -626,6 +626,16 @@ _migrate($conn, 'categories_image_v2', function($db) {
     }
 });
 
+_migrate($conn, 'categories_customization_toggles_v1', function($db) {
+    $cols = ['enable_ice' => 1, 'enable_sugar' => 1, 'enable_milk' => 1, 'enable_addons' => 1];
+    foreach ($cols as $col => $def) {
+        $chk = $db->query("SHOW COLUMNS FROM categories LIKE '$col'");
+        if ($chk && $chk->num_rows === 0) {
+            $db->query("ALTER TABLE categories ADD `$col` TINYINT(1) NOT NULL DEFAULT $def");
+        }
+    }
+});
+
 // â”€â”€ SANITIZE FUNCTION â”€â”€
 
 // ---- Size / Ice / Sugar levels ----
@@ -703,6 +713,12 @@ _migrate($conn, 'product_sizes_level_id_v1', function($db) {
         $db->query("UPDATE product_sizes SET size_level_id = CASE size_code WHEN 'S' THEN 1 WHEN 'M' THEN 2 WHEN 'L' THEN 3 END WHERE size_code IN ('S','M','L')");
     }
 });
+_migrate($conn, 'product_sizes_promo_pct_v1', function($db) {
+    $chk = $db->query("SHOW COLUMNS FROM `product_sizes` LIKE 'promo_pct'");
+    if ($chk && $chk->num_rows === 0) {
+        $db->query("ALTER TABLE `product_sizes` ADD COLUMN `promo_pct` DECIMAL(5,2) NOT NULL DEFAULT 0.00");
+    }
+});
 
 // ---- Milk levels ----
 _migrate($conn, 'milk_levels_v1', function($db) {
@@ -730,6 +746,46 @@ _migrate($conn, 'order_items_sugar_v1', function($db) {
     if (!$db->query("SHOW COLUMNS FROM order_items LIKE 'sugar'")->num_rows) {
         $db->query("ALTER TABLE order_items ADD sugar VARCHAR(50) DEFAULT NULL AFTER ice");
     }
+});
+
+// ---- Addons + Addon Ingredients ----
+_migrate($conn, 'addons_v1', function($db) {
+    $db->query("CREATE TABLE IF NOT EXISTS addons (
+        addon_id   INT AUTO_INCREMENT PRIMARY KEY,
+        name       VARCHAR(100) NOT NULL,
+        price      DECIMAL(10,2) NOT NULL DEFAULT 0,
+        image      VARCHAR(255) DEFAULT NULL,
+        is_active  TINYINT(1) NOT NULL DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) DEFAULT CHARSET=utf8mb4");
+    if ($db->errno) return;
+
+    $db->query("CREATE TABLE IF NOT EXISTS addon_ingredients (
+        id            INT AUTO_INCREMENT PRIMARY KEY,
+        addon_id      INT NOT NULL,
+        ingredient_id INT NOT NULL,
+        amount_used   DECIMAL(10,4) NOT NULL DEFAULT 0,
+        UNIQUE KEY uq_addon_ingredient (addon_id, ingredient_id),
+        CONSTRAINT fk_ai_addon      FOREIGN KEY (addon_id)      REFERENCES addons(addon_id)          ON DELETE CASCADE,
+        CONSTRAINT fk_ai_ingredient FOREIGN KEY (ingredient_id) REFERENCES ingredients(ingredient_id) ON DELETE RESTRICT
+    ) DEFAULT CHARSET=utf8mb4");
+    if ($db->errno) return;
+
+    $db->query("INSERT IGNORE INTO permissions (name, slug, module, sort_order) VALUES ('Addons', 'addons', 'Inventory', 23)");
+    foreach (['admin','manager','inventory_clerk'] as $role) {
+        $db->query("INSERT IGNORE INTO role_permissions (role_id, permission_id)
+            SELECT r.id, p.id FROM roles r, permissions p
+            WHERE r.slug='$role' AND p.slug='addons'");
+    }
+});
+
+// ---- Product <-> Addon pivot (which addons a product offers) ----
+_migrate($conn, 'product_addons_pivot_v1', function($db) {
+    $db->query("CREATE TABLE IF NOT EXISTS product_addons (
+        product_id INT(11) NOT NULL,
+        addon_id   INT(11) NOT NULL,
+        PRIMARY KEY (product_id, addon_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 });
 
 if (!function_exists('sanitizeForReceipt')) {

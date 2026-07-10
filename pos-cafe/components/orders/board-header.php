@@ -19,7 +19,7 @@ $clkTitle = $clocked ? 'Clocked in at ' . ($_clock_since ?? '') : 'Not clocked i
         <i class="fa-solid fa-<?= $clkIcon ?>"></i> <?= $clkLabel ?>
     </button>
     <?php if (can('my_profile')): ?>
-    <a href="<?= e(url('profile.php')) ?>" class="btn-pill">
+    <a href="<?= e(url('profile')) ?>" class="btn-pill">
         <i class="fa-solid fa-circle-user"></i> Profile
     </a>
     <?php endif; ?>

@@ -54,7 +54,7 @@ final class Cart
             throw new CartException('Product not found or unavailable', 404);
         }
 
-        [$linePrice, $sizeLabel, $sizeFactor, $resolvedCode] = $this->resolveSize($product, $sizeCode);
+        [$linePrice, $sizeLabel, $sizeFactor, $resolvedCode, $discountPct] = $this->resolveSize($product, $sizeCode);
 
         $this->mergeItem([
             'product_id'   => (int) $product['product_id'],
@@ -64,6 +64,7 @@ final class Cart
             'size_code'    => $resolvedCode,
             'size_label'   => $sizeLabel,
             'size_factor'  => $sizeFactor,
+            'discount_pct' => $discountPct,
             'sweetness'    => $sweetness,
             'ice'          => $ice,
             'milk'         => $milk,
@@ -104,24 +105,24 @@ final class Cart
      * to the base products.price (defensive: has_sizes=1 with no rows is
      * treated as unsized rather than an error).
      *
-     * @return array{0:float,1:string,2:float,3:string} [price, label, factor, code]
+     * @return array{0:float,1:string,2:float,3:string,4:int} [price, label, factor, code, discount_pct]
      */
     private function resolveSize(array $product, string $sizeCode): array
     {
         $linePrice = (float) $product['price'];   // products.price == Medium / base
         if ((int) $product['has_sizes'] !== 1) {
-            return [$linePrice, '', 1.0, ''];
+            return [$linePrice, '', 1.0, '', 0];
         }
 
         $rows = [];
         foreach ($this->db->all(
-            "SELECT size_code, label, price, size_factor FROM product_sizes WHERE product_id = ?",
+            "SELECT size_code, label, price, size_factor, promo_pct FROM product_sizes WHERE product_id = ?",
             [(int) $product['product_id']]
         ) as $r) {
             $rows[$r['size_code']] = $r;
         }
         if (!$rows) {
-            return [$linePrice, '', 1.0, ''];
+            return [$linePrice, '', 1.0, '', 0];
         }
 
         // size_code is required once a product actually has sizes
@@ -135,6 +136,7 @@ final class Cart
             (string) $chosen['label'],
             (float) $chosen['size_factor'],
             $sizeCode,
+            min(90, (int) ($chosen['promo_pct'] ?? 0)),
         ];
     }
 

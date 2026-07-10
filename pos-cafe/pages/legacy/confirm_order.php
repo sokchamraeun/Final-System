@@ -1,5 +1,6 @@
 <?php
-require __DIR__ . '/../../../auth.php';
+require __DIR__ . '/../../config/app.php';
+require POS_ROOT . '/middleware/auth.php';
 
 // ── AJAX-aware error helper: returns JSON when request is AJAX ──
 function ajax_die(string $message): never {
@@ -71,9 +72,12 @@ $payment_references = isset($_POST['payment_references']) ? $_POST['payment_refe
 if (in_array('paylater', $payment_methods) && count($payment_methods) > 1) {
     ajax_die("Pay Later cannot be combined with other payment methods.");
 }
-// ── VALIDATION: riel cannot be combined with other payment methods ──
+// ── VALIDATION: riel can only combine with cash ──
 if (in_array('riel', $payment_methods) && count($payment_methods) > 1) {
-    ajax_die("Riel payment cannot be combined with other payment methods.");
+    $non_riel = array_diff($payment_methods, ['riel']);
+    if ($non_riel !== ['cash']) {
+        ajax_die("Riel can only be combined with Cash.");
+    }
 }
 
 // ── EXISTING ORDER (add more items) ──

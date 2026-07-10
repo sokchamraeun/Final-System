@@ -66,7 +66,7 @@ $payTone = function (array $o): array {
           <td><span class="pill <?= $pyTone ?>"><?= e($pyLabel) ?> <i class="fa-solid fa-chevron-down"></i></span></td>
           <td><span class="pill <?= $stTone ?>"><?= e($stLabel) ?> <i class="fa-solid fa-chevron-down"></i></span></td>
           <td style="text-align:right;">
-            <a class="ro-view" href="<?= e(url('orders/board') . '?highlight=' . (int)$ro['order_id']) ?>">View <i class="fa-solid fa-chevron-right"></i></a>
+            <a class="ro-view" href="#" onclick="event.preventDefault();openRecentOrderDetail(<?= (int)$ro['order_id'] ?>)">View <i class="fa-solid fa-chevron-right"></i></a>
           </td>
         </tr>
         <?php endwhile; ?>

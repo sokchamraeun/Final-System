@@ -22,6 +22,7 @@ if (!$rows) {
         <th class="px-5 py-3">Name</th>
         <th class="px-5 py-3">Slug</th>
         <th class="px-5 py-3">Icon</th>
+        <th class="px-5 py-3 text-center">Products</th>
         <th class="px-5 py-3">Active</th>
         <?php if ($canManage): ?><th class="px-5 py-3 text-right">Actions</th><?php endif; ?>
       </tr>
@@ -40,6 +41,7 @@ if (!$rows) {
         <td class="px-5 py-3 text-slate-600 dark:text-slate-300"><?= e($r['name'] ?? '') ?></td>
         <td class="px-5 py-3 text-slate-500"><code class="rounded bg-slate-100 px-1.5 py-0.5 text-xs dark:bg-slate-800"><?= e($r['slug'] ?? '') ?></code></td>
         <td class="px-5 py-3 text-slate-500"><?php if (!empty($r['icon'])): ?><i class="fa-solid <?= e($r['icon']) ?>"></i> <?= e($r['icon']) ?><?php else: ?>—<?php endif; ?></td>
+        <td class="px-5 py-3 text-center text-sm font-semibold text-slate-700 dark:text-slate-300"><?= (int) ($r['product_count'] ?? 0) ?></td>
         <td class="px-5 py-3">
           <?php if (!empty($r['is_active'])): ?>
             <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">

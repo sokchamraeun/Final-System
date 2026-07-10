@@ -13,11 +13,9 @@ $cp_tax = $cp_tax ?? 0.0;
 $cp_total = $cp_total ?? 0.0;
 $linked_loyalty = $linked_loyalty ?? null;
 $add_to_order_mode = $add_to_order_mode ?? 0;
-$cp_item_badges = $cp_item_badges ?? [];
 $cp_promo_discount = 0;
 foreach ($cart as $_pi) {
-    $_pid = (int)($_pi['product_id'] ?? 0);
-    $_pct = $cp_item_badges[$_pid] ?? 0;
+    $_pct = (int)($_pi['discount_pct'] ?? 0);
     if ($_pct > 0) {
         $_pp = (float)($_pi['price'] ?? 0);
         $_pq = (int)($_pi['qty'] ?? 1);
@@ -61,8 +59,7 @@ $cp_original_subtotal = $cp_subtotal + $cp_promo_discount;
           !empty($item['sugar'])      ? 'Sugar: '.$item['sugar']      : '',
           !empty($item['addons'])     ? $item['addons']               : '',
         ]);
-        $itemPid  = (int)($item['product_id'] ?? 0);
-        $itemPct  = $cp_item_badges[$itemPid] ?? 0;
+        $itemPct  = (int)($item['discount_pct'] ?? 0);
         $itemNew  = (float)($item['price'] ?? 0);
         $itemOld  = $itemPct > 0 ? $itemNew / (1 - $itemPct / 100) : null;
       ?>

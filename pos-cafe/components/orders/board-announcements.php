@@ -33,8 +33,8 @@ function _buildAnnBanner(ann) {
     div.innerHTML =
         '<i class="fa-solid fa-'+ai+'" style="color:'+ac+';font-size:16px;margin-top:2px;flex-shrink:0"></i>' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:3px">'+_escAnn(ann.title)+'</div>' +
-          '<div style="font-size:12.5px;color:#475569;line-height:1.55">'+_escAnn(ann.message).replace(/\n/g,'<br>')+'</div>' +
+          '<div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px">'+_escAnn(ann.title)+'</div>' +
+          '<div style="font-size:12.5px;color:var(--muted);line-height:1.55">'+_escAnn(ann.message).replace(/\n/g,'<br>')+'</div>' +
         '</div>' +
         '<button onclick="dismissAnn(this,'+ann.id+')" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:14px;padding:2px 4px;flex-shrink:0;margin-top:1px;transition:color .2s" title="Dismiss"><i class="fa-solid fa-xmark"></i></button>';
     return div;

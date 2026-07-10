@@ -57,6 +57,32 @@ $val = static fn(string $k, $d = '') => e($category[$k] ?? $d);
     <input type="hidden" name="existing_image" value="<?= $val('image') ?>">
   </div>
 
+  <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/30">
+    <div class="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Customization Options</div>
+    <div class="flex flex-wrap gap-4">
+      <label class="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+        <input type="hidden" name="enable_ice" value="0">
+        <input type="checkbox" name="enable_ice" value="1" <?= (int) ($category['enable_ice'] ?? 1) === 1 ? 'checked' : '' ?> class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
+        Ice
+      </label>
+      <label class="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+        <input type="hidden" name="enable_sugar" value="0">
+        <input type="checkbox" name="enable_sugar" value="1" <?= (int) ($category['enable_sugar'] ?? 1) === 1 ? 'checked' : '' ?> class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
+        Sugar
+      </label>
+      <label class="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+        <input type="hidden" name="enable_milk" value="0">
+        <input type="checkbox" name="enable_milk" value="1" <?= (int) ($category['enable_milk'] ?? 1) === 1 ? 'checked' : '' ?> class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
+        Milk
+      </label>
+      <label class="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+        <input type="hidden" name="enable_addons" value="0">
+        <input type="checkbox" name="enable_addons" value="1" <?= (int) ($category['enable_addons'] ?? 1) === 1 ? 'checked' : '' ?> class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
+        Add-ons
+      </label>
+    </div>
+  </div>
+
   <label class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
     <input type="checkbox" name="is_active" value="1" <?= (int) ($category['is_active'] ?? 1) === 1 ? 'checked' : '' ?> class="h-4 w-4 rounded border-slate-300 text-brand focus:ring-brand">
     Active

@@ -54,30 +54,12 @@ if ($md && (float)($md['amount'] ?? 0) > 0) {
 $tax   = $after * (TAX_RATE / 100);
 $total = round($after + $tax, 2);
 
-/* ── Per-item discount badge lookup ── */
-$_cart_pids = array_unique(array_filter(array_map(fn($it) => (int)($it['product_id'] ?? 0), $cart)));
-$_item_badges = [];
-if ($_cart_pids) {
-    $_ph = implode(',', array_fill(0, count($_cart_pids), '?'));
-    $_bs = $conn->prepare("SELECT product_id, badge_text FROM products WHERE product_id IN ($_ph)");
-    $_bs->bind_param(str_repeat('i', count($_cart_pids)), ...$_cart_pids);
-    $_bs->execute();
-    $_br = $_bs->get_result();
-    while ($_brow = $_br->fetch_assoc()) {
-        $bt = (string)($_brow['badge_text'] ?? '');
-        if ($bt !== '' && preg_match('/(\d{1,2})\s*%/', $bt, $m)) {
-            $_item_badges[(int)$_brow['product_id']] = min(90, (int)$m[1]);
-        }
-    }
-}
-
 $promo_discount = 0;
 $items_out = [];
 foreach ($cart as $i => $item) {
     $q = (int)($item['qty'] ?? 1);
     $p = (float)($item['price'] ?? 0);
-    $pid = (int)($item['product_id'] ?? 0);
-    $pct = $_item_badges[$pid] ?? 0;
+    $pct = (int)($item['discount_pct'] ?? 0);
     if ($pct > 0) $promo_discount += ($p / (1 - $pct / 100) - $p) * $q;
     $items_out[] = [
         'index'        => $i,

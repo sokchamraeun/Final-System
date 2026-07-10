@@ -133,7 +133,16 @@ h1 {
 HTML);
 }
 
+$__is_ajax = !empty($_GET['ajax'])
+    || (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest');
+
 if (!isset($_SESSION['user_id'])) {
+    if ($__is_ajax) {
+        http_response_code(401);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Session expired. Please refresh and sign in again.']);
+        exit;
+    }
     header("Location: login.php");
     exit;
 }
@@ -143,6 +152,12 @@ $timeout = 30 * 60;
 if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout) {
     session_unset();
     session_destroy();
+    if ($__is_ajax) {
+        http_response_code(401);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'error' => 'Session expired due to inactivity.']);
+        exit;
+    }
     header("Location: login.php?timeout=1");
     exit;
 }

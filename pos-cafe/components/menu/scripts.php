@@ -37,17 +37,10 @@ function escH(str) {
 
 // ── PRODUCT MODAL ──
 var product = {}, modalQty = 1, modalUnitPrice = 0, modalAddonPrice = 0;
-var ADDONS_LIST = [
-  { name: 'No Add On', price: 0 },
-  { name: 'Pearl', price: 0.50 },
-  { name: 'Coffee Jelly', price: 1.00 },
-  { name: 'Tapioca', price: 0.50 },
-  { name: 'Jelly', price: 0.50 },
-  { name: 'Whipped Cream', price: 0.75 }
-];
+var currentAddons = [{ name: 'No Add On', price: 0 }];
 var selectedAddons = [];
 
-function openModal(id, name, price, img, cat, desc, badge, hasSizes, sizes, iceLevels, sugarLevels, milkLevels) {
+function openModal(id, name, price, img, cat, desc, badge, hasSizes, sizes, iceLevels, sugarLevels, milkLevels, addons) {
   var p = Number(price) || 0;
   product = { id: id, name: name, price: p, cat: cat };
   modalQty = 1; modalUnitPrice = p; modalAddonPrice = 0; selectedAddons = [];
@@ -77,7 +70,15 @@ function openModal(id, name, price, img, cat, desc, badge, hasSizes, sizes, iceL
       b.dataset.group = 'size';
       b.dataset.value = s.code;
       b.dataset.price = s.price;
-      b.innerHTML = s.label + ' <span class="pm-price-tag">$' + Number(s.price).toFixed(2) + '</span>';
+      b.dataset.promoPct = s.promo_pct || 0;
+      var pct = parseInt(s.promo_pct) || 0;
+      var label = s.label;
+      if (pct > 0) {
+        var oldP = Number(s.price) / (1 - pct / 100);
+        b.innerHTML = label + ' <span class="pm-price-tag"><span class="pm-old-price">$' + oldP.toFixed(2) + '</span> $' + Number(s.price).toFixed(2) + '</span>';
+      } else {
+        b.innerHTML = label + ' <span class="pm-price-tag">$' + Number(s.price).toFixed(2) + '</span>';
+      }
       b.onclick = function(){ selectSize(b); };
       sizePills.appendChild(b);
     });
@@ -88,7 +89,7 @@ function openModal(id, name, price, img, cat, desc, badge, hasSizes, sizes, iceL
     sizeWrap.style.display = 'none';
   }
 
-  renderAddons();
+  renderAddons(addons);
   updateModalTotal();
   document.getElementById('modal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
@@ -104,7 +105,9 @@ function openModalFromCard(card) {
   try { sugarLevels = JSON.parse(card.dataset.productSugarLevels || '[]'); } catch (e) { sugarLevels = []; }
   var milkLevels = [];
   try { milkLevels = JSON.parse(card.dataset.productMilkLevels || '[]'); } catch (e) { milkLevels = []; }
-  openModal(card.dataset.productId, card.dataset.productName||'', Number(card.dataset.productPrice||0), card.dataset.productImage||'', card.dataset.productCategory||'', card.dataset.productDesc||'', card.dataset.productBadge||'', card.dataset.productHasSizes==='1', sizes, iceLevels, sugarLevels, milkLevels);
+  var addons = [];
+  try { addons = JSON.parse(card.dataset.productAddons || '[]'); } catch (e) { addons = []; }
+  openModal(card.dataset.productId, card.dataset.productName||'', Number(card.dataset.productPrice||0), card.dataset.productImage||'', card.dataset.productCategory||'', card.dataset.productDesc||'', card.dataset.productBadge||'', card.dataset.productHasSizes==='1', sizes, iceLevels, sugarLevels, milkLevels, addons);
 }
 
 function closeModal() { document.getElementById('modal').style.display = 'none'; document.body.style.overflow = ''; }
@@ -118,20 +121,28 @@ function changeQty(delta) {
 
 function updateModalTotal() {
   var unitPrice = modalUnitPrice + modalAddonPrice;
-  document.getElementById('modalUnitPrice').textContent = '$' + unitPrice.toFixed(2);
+  var unitEl = document.getElementById('modalUnitPrice');
+  var selSize = document.querySelector('#sizePills .pm-btn2.active');
+  var pct = selSize ? parseInt(selSize.dataset.promoPct || '0') : 0;
+  if (pct > 0) {
+    var oldP = unitPrice / (1 - pct / 100);
+    unitEl.innerHTML = '<span class="pm-old-price">$' + oldP.toFixed(2) + '</span> $' + unitPrice.toFixed(2);
+  } else {
+    unitEl.textContent = '$' + unitPrice.toFixed(2);
+  }
   document.getElementById('modalTotalDisplay').textContent = '$' + (unitPrice * modalQty).toFixed(2);
   document.getElementById('pmAddText').textContent = 'Add to Order (' + modalQty + ' item' + (modalQty > 1 ? 's' : '') + ')';
 }
 
-function selectPill(pill) {
+function togglePill(pill) {
   var grid = pill.closest('[class*="pm-grid"]');
-  if (grid) grid.querySelectorAll('.pm-btn2').forEach(function(p) { p.classList.remove('active'); });
+  if (grid) grid.querySelectorAll('.pm-btn2').forEach(function(p){ p.classList.remove('active'); });
   pill.classList.add('active');
 }
 
 function getPillValue(groupId) {
-  var a = document.querySelector('#' + groupId + ' .pm-btn2.active');
-  return a ? a.dataset.value : '';
+  var active = document.querySelectorAll('#' + groupId + ' .pm-btn2.active');
+  return Array.from(active).map(function(p) { return p.dataset.value; }).join(',');
 }
 
 function selectSize(pill) {
@@ -157,26 +168,33 @@ function buildLevelPills(group, levels, defaultVal) {
     b.dataset.group = group;
     b.dataset.value = l.name;
     b.textContent = l.name;
-    b.onclick = function(){ selectPill(b); };
+    b.onclick = function(){ togglePill(b); };
     grid.appendChild(b);
   });
 }
 
 // ── ADD-ONS ──
-function renderAddons() {
+function renderAddons(addons) {
+  var wrap = document.getElementById('optAddons');
   var container = document.getElementById('addonPills');
   if (!container) return;
   container.innerHTML = '';
   selectedAddons = [];
-  ADDONS_LIST.forEach(function(a, i) {
+  currentAddons = [{ name: 'No Add On', price: 0 }].concat(Array.isArray(addons) ? addons : []);
+  if (currentAddons.length <= 1) {
+    if (wrap) wrap.style.display = 'none';
+    return;
+  }
+  if (wrap) wrap.style.display = 'block';
+  currentAddons.forEach(function(a, i) {
     var b = document.createElement('button');
     b.className = 'pm-addon-btn' + (i === 0 ? ' active' : '');
-    b.textContent = a.name + (a.price > 0 ? ' +$' + a.price.toFixed(2) : '');
+    b.textContent = a.name + (a.price > 0 ? ' +$' + Number(a.price).toFixed(2) : '');
     b.dataset.index = i;
     b.onclick = function(){ toggleAddon(i); };
     container.appendChild(b);
   });
-  if (ADDONS_LIST.length > 0) selectedAddons.push(0);
+  selectedAddons.push(0);
 }
 
 function toggleAddon(idx) {
@@ -210,13 +228,13 @@ function toggleAddon(idx) {
 function calcAddonPrice() {
   modalAddonPrice = 0;
   selectedAddons.forEach(function(idx) {
-    modalAddonPrice += ADDONS_LIST[idx].price;
+    if (currentAddons[idx]) modalAddonPrice += Number(currentAddons[idx].price) || 0;
   });
   updateModalTotal();
 }
 
 function getSelectedAddons() {
-  return selectedAddons.map(function(idx) { return ADDONS_LIST[idx].name; }).filter(function(n) { return n !== 'No Add On'; });
+  return selectedAddons.map(function(idx) { return currentAddons[idx] ? currentAddons[idx].name : null; }).filter(function(n) { return n && n !== 'No Add On'; });
 }
 
 // ── ADD TO CART (from modal) ──
@@ -1215,7 +1233,11 @@ function cpShowReceipt(data) {
     else if (p.method === 'riel') icon = '<i class="fa-solid fa-coins" style="margin-right:3px;"></i>';
     var d = document.createElement('div');
     d.className = 'cp-receipt-pay-row';
-    d.innerHTML = '<span>' + icon + p.method.charAt(0).toUpperCase() + p.method.slice(1) + '</span><span>$' + parseFloat(p.amount).toFixed(2) + '</span>';
+    var amt = parseFloat(p.amount);
+    var display = p.method === 'riel'
+      ? '&#x17DB;' + Math.round(amt * CP_KHR_RATE / 100) * 100
+      : '$' + amt.toFixed(2);
+    d.innerHTML = '<span>' + icon + p.method.charAt(0).toUpperCase() + p.method.slice(1) + '</span><span>' + display + '</span>';
     paysEl.appendChild(d);
   });
   // Bakong: show QR code inline + start payment polling
@@ -1256,6 +1278,7 @@ function cpShowReceipt(data) {
               qrWrap.appendChild(chk);
               var statusEl = document.getElementById('cpRcptStatus');
               if (statusEl) { statusEl.textContent = 'Completed'; statusEl.style.background = '#22c55e'; statusEl.style.color = '#fff'; }
+              document.getElementById('cpBtnSwitchPayment').style.display = 'none';
             } else if (d.error) {
               clearInterval(cpBakongInterval);
               cpBakongInterval = null;
@@ -1286,7 +1309,7 @@ function cpShowReceipt(data) {
   // store interval for cleanup
   document.getElementById('cpReceiptModal').dataset.bakongInterval = cpBakongInterval || '';
 
-  if (!hasBakong) document.getElementById('cpBtnCancelOrder').style.display = 'none';
+  if (!hasBakong) { document.getElementById('cpBtnCancelOrder').style.display = 'none'; document.getElementById('cpBtnSwitchPayment').style.display = 'none'; } else { document.getElementById('cpBtnSwitchPayment').style.display = ''; }
   // Update button for add-to-order
   var newBtn = document.querySelector('.cp-receipt-btn-new');
   if (data.added_to_order) {
@@ -1310,6 +1333,87 @@ function cpNewOrder() {
   } else {
     location.reload();
   }
+}
+
+// ── Switch Payment Method Modal ──
+var cpSwitchSelectedMethod = 'cash';
+
+function cpOpenSwitchModal() {
+  cpSwitchSelectedMethod = 'cash';
+  document.querySelectorAll('#cpSwitchModal .cp-pay-method').forEach(function(el) {
+    el.classList.toggle('selected', el.dataset.method === 'cash');
+    el.querySelector('input').checked = el.dataset.method === 'cash';
+  });
+  document.getElementById('cpSwitchModal').classList.add('active');
+}
+
+function cpCloseSwitchModal() {
+  document.getElementById('cpSwitchModal').classList.remove('active');
+}
+
+function cpConfirmSwitchMethod(el, method) {
+  document.querySelectorAll('#cpSwitchModal .cp-pay-method').forEach(function(e) {
+    e.classList.remove('selected');
+    e.querySelector('input').checked = false;
+  });
+  el.classList.add('selected');
+  el.querySelector('input').checked = true;
+  cpSwitchSelectedMethod = method;
+}
+
+function cpDoSwitchPayment() {
+  cpCloseSwitchModal();
+  cpSwitchPaymentMethod(cpSwitchSelectedMethod);
+}
+
+function cpSwitchPaymentMethod(method) {
+  var o = cpLastReceiptData;
+  if (!o || !o.order_id) return;
+
+  var methodLabels = { cash: 'Cash', riel: 'Riel (KHR)', paylater: 'Pay Later' };
+  var methodIcons  = { cash: 'fa-money-bill-wave', riel: 'fa-coins', paylater: 'fa-clock' };
+  var label = methodLabels[method] || method.charAt(0).toUpperCase() + method.slice(1);
+  var icon  = methodIcons[method] || 'fa-credit-card';
+
+  var btn = document.getElementById('cpBtnSwitchPayment');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Switching...'; }
+
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', BASE_URL + '/api/orders-board.php?action=paid&id=' + o.order_id + '&method=' + method, true);
+  xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+  xhr.onload = function() {
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Switch Payment'; }
+    try {
+      var r = JSON.parse(xhr.responseText);
+      if (r.ok) {
+        var paysEl = document.getElementById('cpRcptPayments');
+        if (paysEl) {
+          var amt = parseFloat(o.total);
+          var display = method === 'riel'
+            ? '&#x17DB;' + Math.round(amt * CP_KHR_RATE / 100) * 100
+            : '$' + amt.toFixed(2);
+          paysEl.innerHTML = '<div class="cp-receipt-pay-row"><span><i class="fa-solid ' + icon + '" style="margin-right:3px;"></i>' + label + '</span><span>' + display + '</span></div>';
+        }
+        var qrWrap = document.getElementById('cpBakongQrWrap');
+        if (qrWrap) qrWrap.style.display = 'none';
+        document.getElementById('cpBtnCancelOrder').style.display = 'none';
+        document.getElementById('cpBtnSwitchPayment').style.display = 'none';
+        var statusEl = document.getElementById('cpRcptStatus');
+        if (statusEl) { statusEl.textContent = 'Completed'; statusEl.style.background = '#22c55e'; statusEl.style.color = '#fff'; }
+        var iv = document.getElementById('cpReceiptModal').dataset.bakongInterval;
+        if (iv) { clearInterval(parseInt(iv)); document.getElementById('cpReceiptModal').dataset.bakongInterval = ''; }
+      } else {
+        alert(r.error || 'Failed to change payment method');
+      }
+    } catch(e) {
+      alert('Failed to change payment method');
+    }
+  };
+  xhr.onerror = function() {
+    alert('Network error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-arrows-rotate"></i> Switch Payment'; }
+  };
+  xhr.send();
 }
 
 function cpCancelAndContinue() {

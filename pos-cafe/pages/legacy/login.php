@@ -40,7 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_stock_alert'] = true;
             $del = $conn->prepare("DELETE FROM login_attempts WHERE ip = ?");
             $del->bind_param("s", $ip); $del->execute();
-            if (!empty($user['must_change_password'])) { header("Location: profile.php"); exit; }
+            if (!empty($user['must_change_password'])) { header("Location: " . url('profile')); exit; }
             header("Location: loading.php"); exit;
         }
     }

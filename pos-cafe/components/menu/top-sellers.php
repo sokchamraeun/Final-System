@@ -5,6 +5,7 @@ $sizesByProduct = $sizesByProduct ?? [];
 $iceByProduct   = $iceByProduct   ?? [];
 $sugarByProduct = $sugarByProduct ?? [];
 $milkByProduct  = $milkByProduct  ?? [];
+$addonsByProduct = $addonsByProduct ?? [];
 ?>
 <?php if (!empty($top_sellers)): ?>
 <section class="top-sellers cat-section" id="cat-top-sellers">
@@ -26,6 +27,7 @@ $milkByProduct  = $milkByProduct  ?? [];
      data-product-ice-levels='<?= htmlspecialchars(json_encode($iceByProduct[(int)$t['product_id']] ?? []), ENT_QUOTES) ?>'
      data-product-sugar-levels='<?= htmlspecialchars(json_encode($sugarByProduct[(int)$t['product_id']] ?? []), ENT_QUOTES) ?>'
      data-product-milk-levels='<?= htmlspecialchars(json_encode($milkByProduct[(int)$t['product_id']] ?? []), ENT_QUOTES) ?>'
+     data-product-addons='<?= htmlspecialchars(json_encode($addonsByProduct[(int)$t['product_id']] ?? []), ENT_QUOTES) ?>'
      data-is-bestseller="<?= $t['name']===$bestSellerName?'1':'0' ?>"
          role="button" tabindex="0">
       <?php
@@ -48,8 +50,12 @@ $milkByProduct  = $milkByProduct  ?? [];
         <div class="card-size-line">Size: <?= e($tsSizeLine) ?></div>
         <div class="card-bottom">
           <div class="card-price-row">
-            <?php if ($tsOld !== null): ?><span class="card-price-old">$<?= number_format($tsOld, 2) ?></span><?php endif; ?>
-            <span class="card-price<?= $tsOld !== null ? ' discounted' : '' ?>">$<?= number_format($tsPrice, 2) ?></span>
+            <?php if ($tsSizes): ?>
+              <span class="card-price"><?= implode(' / ', array_map(fn($s) => '$' . number_format($s['price'], 0), $tsSizes)) ?></span>
+            <?php else: ?>
+              <?php if ($tsOld !== null): ?><span class="card-price-old">$<?= number_format($tsOld, 2) ?></span><?php endif; ?>
+              <span class="card-price<?= $tsOld !== null ? ' discounted' : '' ?>">$<?= number_format($tsPrice, 2) ?></span>
+            <?php endif; ?>
           </div>
           <?php if ((int)($t['has_sizes'] ?? 0) === 1): ?>
           <button class="btn-add-full" onclick="event.stopPropagation(); openModalFromCard(this.closest('.product-card'));"><i class="fa-solid fa-plus"></i> Add</button>

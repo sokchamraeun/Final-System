@@ -7,9 +7,9 @@ $available = (int) ($p['is_available'] ?? 1) === 1;
 ?>
 <tr class="border-b border-slate-100 transition hover:bg-slate-50/50 dark:border-slate-800 dark:hover:bg-slate-900/50">
   <td class="whitespace-nowrap px-4 py-3 text-center text-sm font-medium text-slate-400"><?= $no ?></td>
-  <td class="whitespace-nowrap px-4 py-3">
+  <td class="whitespace-nowrap px-3 py-3">
     <div class="flex items-center gap-3">
-      <div class="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
+      <div class="h-8 w-8 shrink-0 overflow-hidden rounded-lg bg-slate-100 dark:bg-slate-800">
         <?php if (!empty($p['image'])): ?>
           <img src="<?= e(ROOT_URL . '/' . $p['image']) ?>" alt="" loading="lazy" class="h-full w-full object-cover <?= $available ? '' : 'grayscale' ?>">
         <?php else: ?>
@@ -26,7 +26,7 @@ $available = (int) ($p['is_available'] ?? 1) === 1;
       </div>
     </div>
   </td>
-  <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+  <td class="whitespace-nowrap px-2 py-3 text-sm text-slate-500 dark:text-slate-400">
     <?php if (!empty($p['category_name'])): ?>
       <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
         <i class="fa-solid fa-tag text-[9px]"></i><?= e($p['category_name']) ?>
@@ -45,7 +45,18 @@ $available = (int) ($p['is_available'] ?? 1) === 1;
     <?php endif; ?>
   </td>
   <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
-    <span class="text-slate-300 dark:text-slate-600">&mdash;</span>
+    <?php if (!empty($p['addon_names'])): ?>
+      <span class="text-xs text-slate-600 dark:text-slate-300"><?= e($p['addon_names']) ?></span>
+    <?php else: ?>
+      <span class="text-slate-300 dark:text-slate-600">&mdash;</span>
+    <?php endif; ?>
+  </td>
+  <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-500 dark:text-slate-400">
+    <?php if (!empty($p['milk_levels'])): ?>
+      <span class="text-xs text-slate-600 dark:text-slate-300"><?= e($p['milk_levels']) ?></span>
+    <?php else: ?>
+      <span class="text-slate-300 dark:text-slate-600">&mdash;</span>
+    <?php endif; ?>
   </td>
   <td class="whitespace-nowrap px-4 py-3">
     <?php if (!empty($p['sugar_levels'])): ?>

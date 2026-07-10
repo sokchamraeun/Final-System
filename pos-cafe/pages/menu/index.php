@@ -40,23 +40,6 @@ if ($_cp_fpid > 0 && $_cp_fname === '') {
         if ($_fp_r = $_fp_s->get_result()->fetch_assoc()) { $_cp_fname = $_fp_r['name']; $_cp_fprice = (float)$_fp_r['price']; }
         $_fp_s->close(); }
 }
-/* ── Per-item discount badge lookup (display only — cart price is already the real charge) ── */
-$cp_item_badges = [];
-$_cart_pids = array_unique(array_filter(array_map(fn($it) => (int)($it['product_id'] ?? 0), $cart)));
-if ($_cart_pids) {
-    $_ph = implode(',', array_fill(0, count($_cart_pids), '?'));
-    $_bs = $conn->prepare("SELECT product_id, badge_text FROM products WHERE product_id IN ($_ph)");
-    $_bs->bind_param(str_repeat('i', count($_cart_pids)), ...$_cart_pids);
-    $_bs->execute();
-    $_br = $_bs->get_result();
-    while ($_brow = $_br->fetch_assoc()) {
-        $bt = (string)($_brow['badge_text'] ?? '');
-        if ($bt !== '' && preg_match('/(\d{1,2})\s*%/', $bt, $m)) {
-            $cp_item_badges[(int)$_brow['product_id']] = min(90, (int)$m[1]);
-        }
-    }
-}
-
 $cp_cheapest_name  = ($cp_cheapest_idx >= 0) ? ($cart[$cp_cheapest_idx]['product_name'] ?? '') : '';
 $cp_cheapest_price = ($cp_cheapest_idx >= 0 && $cp_min_price < PHP_FLOAT_MAX) ? $cp_min_price : 0.0;
 $cp_free_name  = ($_cp_fpid > 0 && $_cp_fname !== '') ? $_cp_fname : $cp_cheapest_name;
@@ -137,12 +120,18 @@ if (!empty($search_term)) {
     $result = mysqli_query($conn, $query);
 }
 
-$categories = []; $catIcons = []; $catImages = [];
-$_cat_res = $conn->query("SELECT slug, name, icon, image FROM categories WHERE is_active = 1 ORDER BY display_order");
+$categories = []; $catIcons = []; $catImages = []; $catSettings = [];
+$_cat_res = $conn->query("SELECT slug, name, icon, image, enable_ice, enable_sugar, enable_milk, enable_addons FROM categories WHERE is_active = 1 ORDER BY display_order");
 while ($_cat_row = $_cat_res->fetch_assoc()) {
     $categories[$_cat_row['slug']] = $_cat_row['name'];
     $catIcons[$_cat_row['slug']]   = $_cat_row['icon'];
     $catImages[$_cat_row['slug']]  = $_cat_row['image'];
+    $catSettings[$_cat_row['slug']] = [
+        'enable_ice'    => (int)($_cat_row['enable_ice'] ?? 1),
+        'enable_sugar'  => (int)($_cat_row['enable_sugar'] ?? 1),
+        'enable_milk'   => (int)($_cat_row['enable_milk'] ?? 1),
+        'enable_addons' => (int)($_cat_row['enable_addons'] ?? 1),
+    ];
 }
 
 $products = []; $flat_products = []; $promo_products = [];
@@ -156,12 +145,13 @@ while ($row = mysqli_fetch_assoc($result)) {
 /* â”€â”€ SIZES PER PRODUCT (for sized products: has_sizes=1) â”€â”€ */
 $sizesByProduct = [];
 if (!empty($flat_products)) {
-    $sz_res = $conn->query("SELECT product_id, size_code, label, price FROM product_sizes ORDER BY product_id, sort_order ASC");
+    $sz_res = $conn->query("SELECT product_id, size_code, label, price, promo_pct FROM product_sizes ORDER BY product_id, sort_order ASC");
     while ($sz_res && $sz_row = $sz_res->fetch_assoc()) {
         $sizesByProduct[(int)$sz_row['product_id']][] = [
-            'code'  => $sz_row['size_code'],
-            'label' => $sz_row['label'],
-            'price' => (float)$sz_row['price'],
+            'code'      => $sz_row['size_code'],
+            'label'     => $sz_row['label'],
+            'price'     => (float)$sz_row['price'],
+            'promo_pct' => min(90, (int)($sz_row['promo_pct'] ?? 0)),
         ];
     }
 }
@@ -171,17 +161,34 @@ $iceByProduct   = [];
 $sugarByProduct = [];
 $milkByProduct  = [];
 if (!empty($flat_products)) {
-    $il_res = $conn->query("SELECT pil.product_id, il.id, il.name FROM product_ice_levels pil JOIN ice_levels il ON il.id = pil.ice_level_id");
+    $il_res = $conn->query("SELECT pil.product_id, il.id, il.name, p.category FROM product_ice_levels pil JOIN ice_levels il ON il.id = pil.ice_level_id JOIN products p ON p.product_id = pil.product_id");
     while ($il_res && $il_row = $il_res->fetch_assoc()) {
+        $cat = $il_row['category'] ?? '';
+        if (($catSettings[$cat]['enable_ice'] ?? 1) === 0) continue;
         $iceByProduct[(int)$il_row['product_id']][] = ['id' => (int)$il_row['id'], 'name' => $il_row['name']];
     }
-    $sl_res = $conn->query("SELECT psl.product_id, sl.id, sl.name FROM product_sugar_levels psl JOIN sugar_levels sl ON sl.id = psl.sugar_level_id");
+    $sl_res = $conn->query("SELECT psl.product_id, sl.id, sl.name, p.category FROM product_sugar_levels psl JOIN sugar_levels sl ON sl.id = psl.sugar_level_id JOIN products p ON p.product_id = psl.product_id");
     while ($sl_res && $sl_row = $sl_res->fetch_assoc()) {
+        $cat = $sl_row['category'] ?? '';
+        if (($catSettings[$cat]['enable_sugar'] ?? 1) === 0) continue;
         $sugarByProduct[(int)$sl_row['product_id']][] = ['id' => (int)$sl_row['id'], 'name' => $sl_row['name']];
     }
-    $ml_res = $conn->query("SELECT pml.product_id, ml.id, ml.name FROM product_milk_levels pml JOIN milk_levels ml ON ml.id = pml.milk_level_id");
+    $ml_res = $conn->query("SELECT pml.product_id, ml.id, ml.name, p.category FROM product_milk_levels pml JOIN milk_levels ml ON ml.id = pml.milk_level_id JOIN products p ON p.product_id = pml.product_id");
     while ($ml_res && $ml_row = $ml_res->fetch_assoc()) {
+        $cat = $ml_row['category'] ?? '';
+        if (($catSettings[$cat]['enable_milk'] ?? 1) === 0) continue;
         $milkByProduct[(int)$ml_row['product_id']][] = ['id' => (int)$ml_row['id'], 'name' => $ml_row['name']];
+    }
+}
+
+/* ── ADD-ONS PER PRODUCT ── */
+$addonsByProduct = [];
+if (!empty($flat_products)) {
+    $ad_res = $conn->query("SELECT pa.product_id, a.addon_id, a.name, a.price, p.category FROM product_addons pa JOIN addons a ON a.addon_id = pa.addon_id JOIN products p ON p.product_id = pa.product_id WHERE a.is_active = 1");
+    while ($ad_res && $ad_row = $ad_res->fetch_assoc()) {
+        $cat = $ad_row['category'] ?? '';
+        if (($catSettings[$cat]['enable_addons'] ?? 1) === 0) continue;
+        $addonsByProduct[(int)$ad_row['product_id']][] = ['id' => (int)$ad_row['addon_id'], 'name' => $ad_row['name'], 'price' => (float)$ad_row['price']];
     }
 }
 
@@ -252,8 +259,8 @@ if (!empty($flat_products)) {
       <?php component('menu/categories', ['categories' => $categories, 'products' => $products, 'catIcons' => $catIcons, 'catImages' => $catImages, 'search_term' => $search_term, 'sort' => $sort, 'top_sellers' => $top_sellers, 'promo_products' => $promo_products]) ?>
     <div class="menu-scroll" id="menuScroll">
       <main class="menu-main">
-        <?php component('menu/top-sellers', ['top_sellers' => $top_sellers, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct]) ?>
-        <?php component('menu/product-grid', ['is_price_sort' => $is_price_sort, 'flat_products' => $flat_products, 'products' => $products, 'promo_products' => $promo_products, 'top_sellers' => $top_sellers, 'categories' => $categories, 'catIcons' => $catIcons, 'sort' => $sort, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct, 'search_term' => $search_term]) ?>
+        <?php component('menu/top-sellers', ['top_sellers' => $top_sellers, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct, 'addonsByProduct' => $addonsByProduct]) ?>
+        <?php component('menu/product-grid', ['is_price_sort' => $is_price_sort, 'flat_products' => $flat_products, 'products' => $products, 'promo_products' => $promo_products, 'top_sellers' => $top_sellers, 'categories' => $categories, 'catIcons' => $catIcons, 'sort' => $sort, 'bestSellerName' => $bestSellerName, 'sizesByProduct' => $sizesByProduct, 'iceByProduct' => $iceByProduct, 'sugarByProduct' => $sugarByProduct, 'addonsByProduct' => $addonsByProduct, 'search_term' => $search_term]) ?>
       </main>
     </div>
   </div>
@@ -263,7 +270,6 @@ if (!empty($flat_products)) {
     'cp_hh' => $cp_hh, 'cp_manual' => $cp_manual, 'cp_manual_label' => $cp_manual_label,
     'cp_after' => $cp_after, 'cp_tax' => $cp_tax, 'cp_total' => $cp_total,
     'linked_loyalty' => $linked_loyalty, 'add_to_order_mode' => $add_to_order_mode,
-    'cp_item_badges' => $cp_item_badges,
   ]) ?>
 </div>
 

@@ -632,7 +632,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'list') {
             <i class="fa-solid fa-<?= $clkIcon ?>"></i> <?= $clkLabel ?>
         </button>
         <?php if (can("my_profile")): ?>
-        <a href="profile.php" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;color:var(--accent);background:rgba(209,144,75,.08);border:1px solid rgba(209,144,75,.2);transition:all .2s;">
+        <a href="<?= e(url('profile')) ?>" style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;color:var(--accent);background:rgba(209,144,75,.08);border:1px solid rgba(209,144,75,.2);transition:all .2s;">
             <i class="fa-solid fa-circle-user"></i> Profile
         </a>
         <?php endif; ?>

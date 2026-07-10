@@ -33,12 +33,13 @@
     RewriteRule ^ingredient_report\.php$ ingredient/report [L,R=301,QSA]
     RewriteRule ^view_order\.php$ orders/board [L,R=301,QSA]
     RewriteRule ^view_order/?$ orders/board [L,R=301,QSA]
+    RewriteRule ^profile\.php$ profile [L,R=301,QSA]
 
     # Legacy .php requests (AJAX from legacy pages): /pos-cafe/name.php → pages/legacy/name.php
     RewriteRule ^([\w-]+)\.php$ pages/legacy/$1.php [L,QSA]
 
     # Known migrated modules — take priority over legacy clean URLs
-    RewriteRule ^(dashboard|products|menu|categories|levels|orders|attendance|employees|roles|settings|announcements|inventory|recipes|suppliers|purchase-orders|stock|loyalty|payment|cart|stands|reports|admins|receipts)/?$ pages/$1/index.php [L,QSA]
+    RewriteRule ^(dashboard|products|menu|categories|levels|orders|attendance|employees|roles|settings|announcements|inventory|recipes|suppliers|purchase-orders|stock|loyalty|payment|cart|stands|reports|report|admins|receipts|addons|addon-ingredients|profile)/?$ pages/$1/index.php [L,QSA]
 
     # Legacy clean URLs: /pos-cafe/{name} → pages/legacy/{name}.php
     # Catches everything not in the module list above

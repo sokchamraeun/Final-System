@@ -27,7 +27,7 @@ $baseUrl = url('pages/admins/index.php?search=' . urlencode($search));
 component('layout/header', ['pageTitle' => $pageTitle, 'pageSubtitle' => $pageSubtitle]);
 component('layout/main',   ['title' => 'Admins', 'crumbs' => ['Settings', 'Admins'], 'actions' => $actions]);
 component('admins/admin-search', ['search' => $search]);
-component('admins/admin-table',  ['admins' => $result['rows'], 'canManage' => $canManage]);
+component('admins/admin-table',  ['admins' => $result['rows'], 'canManage' => $canManage, 'page' => $page, 'perPage' => PER_PAGE]);
 component('common/pagination', ['page' => $page, 'perPage' => PER_PAGE, 'total' => $result['total'], 'baseUrl' => $baseUrl]);
 
 if ($canManage):

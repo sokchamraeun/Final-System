@@ -222,4 +222,102 @@ component('layout/header', ['pageTitle' => $pageTitle, 'pageSubtitle' => $pageSu
 <?php endif; ?>
 <?php
 component('dashboard/scripts', ['_flash_welcome' => $_flash_welcome, '_flash_stock_alert' => $_flash_stock_alert, 'low_stock' => $low_stock]);
+
+/* ── Order detail modal (reused from orders board) ── */
+if ($_is_mgr): ?>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<div class="detail-modal fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4"
+     id="orderDetailModal"
+     onclick="if(event.target===this)closeRecentOrderDetail()">
+    <div class="detail-modal-content w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+        <div class="detail-head flex items-center justify-between bg-gradient-to-r from-teal-600 to-emerald-500 px-7 py-5">
+            <h2 class="flex items-center gap-2 text-lg font-bold text-white">
+                <i class="fa-solid fa-receipt"></i>
+                Order Detail <span id="detailOrderNumber">#</span>
+            </h2>
+            <button type="button"
+                    class="btn-close-detail flex h-9 w-9 items-center justify-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
+                    onclick="closeRecentOrderDetail()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="detail-body max-h-[65vh] overflow-y-auto px-7 py-6" id="detailBody"></div>
+        <div class="detail-foot flex items-center justify-between border-t border-teal-50 bg-teal-50/50 px-7 py-5" id="detailActions"></div>
+    </div>
+</div>
+<script>
+function escapeHtml(t){var d=document.createElement('div');d.appendChild(document.createTextNode(t));return d.innerHTML;}
+function timeAgo(d){var s=(Date.now()-new Date(d.replace(' ','T')))/1e3;if(s<60)return'just now';var m=Math.floor(s/60);if(m<60)return m+'m ago';var h=Math.floor(m/60);if(h<24)return h+'h ago';var day=Math.floor(h/24);return day+'d ago';}
+function statusPill(s){var m={Completed:'green',Preparing:'blue',Paid:'green',PendingPayment:'amber',Cancelled:'red',Refunded:'purple'};var c=m[s]||'slate';return'<span class="pill '+c+'">'+(s||'Unknown')+'</span>';}
+function paymentPill(s){var m={paid:'<span class="pill green">Paid</span>',unpaid:'<span class="pill red">Unpaid</span>',pending:'<span class="pill amber">Pending</span>'};return m[s]||'<span class="pill slate">'+(s||'—')+'</span>';}
+const DASHBOARD_API = <?= json_encode(url('api/orders-board.php')) ?>;
+
+function openRecentOrderDetail(id) {
+    fetch(DASHBOARD_API + '?action=fetch')
+        .then(r => r.json())
+        .then(raw => {
+            const data = Array.isArray(raw) ? raw : (raw.orders || []);
+            const o = data.find(x => Number(x.order_id) === Number(id));
+            if (!o) { showToast('Order not found', 'error'); return; }
+
+            document.getElementById('detailOrderNumber').textContent = '#' + o.daily_order_no + ' — ' + (o.customer_name || 'Guest');
+
+            let reasonHtml = '';
+            if (o.status === 'Cancelled' && o.cancel_reason) {
+                reasonHtml += '<div class="detail-reason cancel-reason"><i class="fa-solid fa-ban"></i> ' + escapeHtml(o.cancel_reason) + (o.cancelled_by ? ' — ' + escapeHtml(o.cancelled_by) : '') + '</div>';
+            }
+            if (o.status === 'Refunded' && o.refund_reason) {
+                reasonHtml += '<div class="detail-reason refund-reason"><i class="fa-solid fa-rotate-left"></i> ' + escapeHtml(o.refund_reason) + (o.refunded_by ? ' — ' + escapeHtml(o.refunded_by) : '') + '</div>';
+            }
+            const itemsHtml = buildItemsHtml(o.items || []);
+            document.getElementById('detailBody').innerHTML = `
+                <div class="detail-row"><span class="k">Customer</span><span class="v">${escapeHtml(o.customer_name || 'Guest')}</span></div>
+                <div class="detail-row"><span class="k">Phone</span><span class="v">${o.phone ? escapeHtml(o.phone) : '-'}</span></div>
+                <div class="detail-row"><span class="k">Table</span><span class="v">${o.table_number ? escapeHtml(String(o.table_number)) : '-'}</span></div>
+                <div class="detail-row"><span class="k">Status</span><span class="v">${statusPill(o.status)}</span></div>
+                <div class="detail-row"><span class="k">Payment</span><span class="v">${paymentPill(o.payment_status)}</span></div>
+                <div class="detail-row"><span class="k">Placed By</span><span class="v">${escapeHtml(o.employee_name || '-')}</span></div>
+                <div class="detail-row"><span class="k">Placed</span><span class="v">${timeAgo(o.order_date)}</span></div>
+                <div class="detail-row"><span class="k">Total</span><span class="v">$${parseFloat(o.total || 0).toFixed(2)}</span></div>
+                ${reasonHtml}
+                <div class="detail-items">${itemsHtml}</div>
+            `;
+            document.getElementById('detailActions').innerHTML = ``;
+            document.getElementById('orderDetailModal').classList.remove('hidden');
+            document.getElementById('orderDetailModal').classList.add('flex');
+        });
+}
+
+function closeRecentOrderDetail() {
+    document.getElementById('orderDetailModal').classList.add('hidden');
+    document.getElementById('orderDetailModal').classList.remove('flex');
+}
+
+function buildItemsHtml(items) {
+    if (!items || items.length === 0) return '<div style="padding:16px;color:#94a3b8;font-size:13px;">No items</div>';
+    return items.map(i => {
+        const chips = [];
+        if (i.size) chips.push('<span class="detail-item-chip">Size: ' + escapeHtml(i.size) + '</span>');
+        if (i.sweetness) chips.push('<span class="detail-item-chip">' + escapeHtml(i.sweetness) + '</span>');
+        if (i.ice) chips.push('<span class="detail-item-chip">' + escapeHtml(i.ice) + '</span>');
+        if (i.milk) chips.push('<span class="detail-item-chip">' + escapeHtml(i.milk) + '</span>');
+        return '<div class="detail-item-line">' +
+            '<div class="detail-item-qty">\u00d7' + escapeHtml(String(i.quantity)) + '</div>' +
+            '<div><div class="detail-item-name">' + escapeHtml(i.product_name) + '</div>' +
+            (chips.length ? '<div class="detail-item-chips">' + chips.join('') + '</div>' : '') + '</div></div>';
+    }).join('');
+}
+
+function showToast(message, type) {
+    if (typeof Toastify !== 'undefined') {
+        Toastify({
+            text: message, duration: 3000, gravity: "top", position: "right", offset: { y: 70 },
+            style: { background: type === 'success' ? '#f0fdf4' : '#fff1f2', color: type === 'success' ? '#15803d' : '#be123c', fontWeight: '600', border: '1px solid ' + (type === 'success' ? '#bbf7d0' : '#fecdd3') }
+        }).showToast();
+    }
+}
+</script>
+<?php endif; ?>
+
+<?php
 component('layout/footer');

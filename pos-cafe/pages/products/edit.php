@@ -26,9 +26,11 @@ $sugarLevels = $levelModel->setTable('sugar_levels')->active();
 $milkLevels  = $levelModel->setTable('milk_levels')->active();
 $levelModel->setTable('size_levels');
 $sizes = $model->getSizes($id);
+$addons        = (new Addon())->all();
 $selectedIce   = $model->getIceLevelIds($id);
 $selectedSugar = $model->getSugarLevelIds($id);
 $selectedMilk  = $model->getMilkLevelIds($id);
+$selectedAddons = $model->getAddonIds($id);
 $selectedSizes  = $model->getSelectedSizeIds($id);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -75,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
 
         if ($hasSizes) {
-            $model->saveSizes($id, $_POST['size_level_ids'] ?? [], $_POST['size_prices'] ?? [], $_POST['size_factors'] ?? []);
+            $model->saveSizes($id, $_POST['size_level_ids'] ?? [], $_POST['size_prices'] ?? [], $_POST['size_factors'] ?? [], $_POST['size_promo_pcts'] ?? []);
         } else {
             $model->saveSizes($id, [], [], []);
         }
@@ -83,6 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $model->saveIceLevels($id, $_POST['ice_level_ids'] ?? []);
         $model->saveSugarLevels($id, $_POST['sugar_level_ids'] ?? []);
         $model->saveMilkLevels($id, $_POST['milk_level_ids'] ?? []);
+        $model->saveAddonIds($id, $_POST['addon_ids'] ?? []);
 
         if ($partial) {
             echo 'OK';
@@ -109,9 +112,11 @@ if ($partial) {
         'iceLevels'     => $iceLevels,
         'sugarLevels'   => $sugarLevels,
         'milkLevels'    => $milkLevels,
+        'addons'        => $addons,
         'selectedIce'   => $selectedIce,
         'selectedSugar' => $selectedSugar,
         'selectedMilk'  => $selectedMilk,
+        'selectedAddons' => $selectedAddons,
         'selectedSizes' => $selectedSizes,
         'modal'         => true,
     ]);
@@ -130,9 +135,11 @@ component('products/product-form', [
     'iceLevels'     => $iceLevels,
     'sugarLevels'   => $sugarLevels,
     'milkLevels'    => $milkLevels,
+    'addons'        => $addons,
     'selectedIce'   => $selectedIce,
     'selectedSugar' => $selectedSugar,
     'selectedMilk'  => $selectedMilk,
+    'selectedAddons' => $selectedAddons,
     'selectedSizes' => $selectedSizes,
 ]);
 component('layout/footer');

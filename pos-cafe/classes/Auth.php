@@ -51,6 +51,18 @@ final class Auth
         return self::role() === 'admin';
     }
 
+    /** Employee photo URL (from employees table matched by user_id), or null. */
+    public static function photo(): ?string
+    {
+        $uid = self::id();
+        if (!$uid) return null;
+        $row = Database::instance()->first(
+            "SELECT photo FROM employees WHERE user_id = ? AND photo IS NOT NULL AND photo != '' LIMIT 1",
+            [$uid]
+        );
+        return $row['photo'] ?? null;
+    }
+
     /** Initials for the avatar bubble. */
     public static function initials(): string
     {

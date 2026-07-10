@@ -16,7 +16,7 @@ $cards = [
     ['Completed Orders',    number_format((int)$completed_count), 'fa-circle-check','ic-green', 'Completed today'],
     ['Products',            number_format((int)$products_count), 'fa-box',        'ic-blue',   number_format((int)$products_active) . ' active'],
     ['Ingredient Low Stock',number_format((int)$low_stock),'fa-triangle-exclamation','ic-red', 'Value ' . $m((float)$low_stock_value)],
-    ['Customers',           number_format((int)$customers_count), 'fa-users',     'ic-indigo', 'Total registered'],
+    ['Cash',     $m((float)$paid_revenue), 'fa-money-bill-wave',     'ic-teal',   number_format((int)$paid_orders) . ' paid'],
     ['Profit Today',        $m((float)$profit_today),     'fa-arrow-trend-up',    'ic-teal',   'Margin ' . number_format((float)$margin_pct, 1) . '% · COGS ' . $m((float)$cogs_today)],
 ];
 ?>

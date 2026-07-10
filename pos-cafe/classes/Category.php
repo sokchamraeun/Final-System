@@ -19,7 +19,8 @@ final class Category
     public function active(): array
     {
         return $this->db->all(
-            "SELECT category_id, slug, name, icon, image, display_order
+            "SELECT category_id, slug, name, icon, image, display_order,
+                    enable_ice, enable_sugar, enable_milk, enable_addons
              FROM categories
              WHERE is_active = 1
              ORDER BY display_order, name"
@@ -64,7 +65,8 @@ final class Category
         $page   = max(1, $page);
         $offset = ($page - 1) * $perPage;
         $rows   = $this->db->all(
-            "SELECT c.*
+            "SELECT c.*,
+                    (SELECT COUNT(*) FROM products WHERE category_id = c.category_id) AS product_count
              FROM categories c
              {$whereSql}
              ORDER BY c.display_order, c.name
@@ -78,8 +80,8 @@ final class Category
     public function create(array $data): int
     {
         return $this->db->insert(
-            "INSERT INTO categories (slug, name, icon, image, display_order, is_active)
-             VALUES (?, ?, ?, ?, ?, ?)",
+            "INSERT INTO categories (slug, name, icon, image, display_order, is_active, enable_ice, enable_sugar, enable_milk, enable_addons)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             [
                 (string) ($data['slug'] ?? str_slug($data['name'] ?? '')),
                 (string) $data['name'],
@@ -87,6 +89,10 @@ final class Category
                 (string) ($data['image'] ?? ''),
                 (int)    ($data['display_order'] ?? 0),
                 isset($data['is_active']) ? 1 : 0,
+                !empty($data['enable_ice']) ? 1 : 0,
+                !empty($data['enable_sugar']) ? 1 : 0,
+                !empty($data['enable_milk']) ? 1 : 0,
+                !empty($data['enable_addons']) ? 1 : 0,
             ]
         );
     }
@@ -96,7 +102,8 @@ final class Category
         return $this->db->execute(
             "UPDATE categories
              SET slug = ?, name = ?, icon = ?, image = ?,
-                 display_order = ?, is_active = ?
+                  display_order = ?, is_active = ?,
+                  enable_ice = ?, enable_sugar = ?, enable_milk = ?, enable_addons = ?
              WHERE category_id = ?",
             [
                 (string) ($data['slug'] ?? str_slug($data['name'] ?? '')),
@@ -105,6 +112,10 @@ final class Category
                 (string) ($data['image'] ?? ''),
                 (int)    ($data['display_order'] ?? 0),
                 isset($data['is_active']) ? 1 : 0,
+                !empty($data['enable_ice']) ? 1 : 0,
+                !empty($data['enable_sugar']) ? 1 : 0,
+                !empty($data['enable_milk']) ? 1 : 0,
+                !empty($data['enable_addons']) ? 1 : 0,
                 $id,
             ]
         );

@@ -1698,13 +1698,15 @@ function updateConfirmBtn(selected) {
         text.textContent = 'Place Pay Later Order';
         btn.classList.add('paylater-selected');
     } else if (selected.length > 1) {
-        // any split combination
         icon.className = 'fa-solid fa-layer-group';
         text.textContent = 'Confirm Split Payment';
         btn.classList.add('split-selected');
         if (selected.includes('cash') && calc) {
             calc.classList.add('visible');
             setTimeout(() => document.getElementById('cashReceived')?.focus(), 50);
+        }
+        if (selected.includes('riel') && rielCalc) {
+            rielCalc.classList.add('visible');
         }
     } else if (selected.includes('riel')) {
         icon.className = 'fa-solid fa-coins';
@@ -1740,17 +1742,32 @@ function togglePayment(label) {
     const cb = label.querySelector('input[type="checkbox"]');
     const value = cb.value;
     
-    // ── Pay Later and Riel are solo-only ──
-    if (value === 'paylater' || value === 'riel') {
+    // ── Pay Later is solo-only ──
+    if (value === 'paylater') {
         document.querySelectorAll('.payment-method input[type="checkbox"]').forEach(c => {
             c.checked = false;
         });
         cb.checked = true;
+    } else if (value === 'riel') {
+        // Riel can combine with Cash only
+        const cashCb = document.querySelector('.payment-method input[value="cash"]');
+        const payLater = document.querySelector('.payment-method input[value="paylater"]');
+        if (payLater && payLater.checked) payLater.checked = false;
+        const bakongCb = document.querySelector('.payment-method input[value="bakong"]');
+        if (bakongCb && bakongCb.checked) bakongCb.checked = false;
+        // Toggle riel
+        cb.checked = !cb.checked;
+        // If only riel is selected (deselect cash), that's fine
+        // If riel+cash both selected, that's also fine
+        const checked = document.querySelectorAll('.payment-method input[type="checkbox"]:checked');
+        if (checked.length === 0) {
+            cb.checked = true;
+        }
     } else {
         const payLater = document.querySelector('.payment-method input[value="paylater"]');
         if (payLater && payLater.checked) payLater.checked = false;
         const rielCb = document.querySelector('.payment-method input[value="riel"]');
-        if (rielCb && rielCb.checked) rielCb.checked = false;
+        if (rielCb && rielCb.checked && value !== 'cash') rielCb.checked = false;
         cb.checked = !cb.checked;
     }
     // Reset solo-riel KHR input when riel is deselected

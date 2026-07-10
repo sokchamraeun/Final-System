@@ -45,11 +45,17 @@ if ($isPosCafe) {
     $profileName      = Auth::name();
     $profileRoleName  = Auth::roleMeta()['name'] ?? '';
     $profileRoleColor = Auth::roleMeta()['color'] ?? '#d1904b';
+    $profilePhoto     = Auth::photo();
     $profileInitials  = Auth::initials();
 } else {
     $profileName      = $admin_name   ?? ($_SESSION['username']  ?? 'User');
     $profileRoleName  = $_cur_role_name  ?? '';
     $profileRoleColor = $_cur_role_color ?? '#d1904b';
+    $profilePhoto     = null;
+    if ($conn && !empty($_SESSION['user_id'])) {
+        $r = $conn->query("SELECT photo FROM employees WHERE user_id = " . (int)$_SESSION['user_id'] . " AND photo IS NOT NULL AND photo != '' LIMIT 1");
+        if ($r && $row = $r->fetch_assoc()) $profilePhoto = $row['photo'];
+    }
     $profileInitials  = strtoupper(substr($profileName, 0, 1));
 }
 
@@ -204,7 +210,13 @@ $_can_stands = in_array($_SESSION['role'] ?? '', ['admin', 'manager', 'staff'], 
 
   <!-- Profile -->
   <div class="profile-row flex items-center gap-3 border-b border-white/10 px-4 py-4">
-    <div class="grid h-11 w-11 shrink-0 place-items-center rounded-full text-sm font-bold text-white ring-2 ring-white/10" style="background:<?= e($profileRoleColor) ?>"><?= e($profileInitials) ?></div>
+    <div class="h-11 w-11 shrink-0 overflow-hidden rounded-full ring-2 ring-white/10" style="background:<?= e($profileRoleColor) ?>">
+      <?php if ($profilePhoto): ?>
+        <img src="<?= e(root_url($profilePhoto)) ?>" alt="" class="h-full w-full object-cover">
+      <?php else: ?>
+        <div class="grid h-full w-full place-items-center text-sm font-bold text-white"><?= e($profileInitials) ?></div>
+      <?php endif; ?>
+    </div>
     <div class="sb-label min-w-0 flex-1">
       <div class="truncate text-sm font-bold text-white"><?= e($profileName) ?></div>
       <div class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide" style="color:<?= e($profileRoleColor) ?>"><?= e($profileRoleName) ?></div>
@@ -275,6 +287,10 @@ $_can_stands = in_array($_SESSION['role'] ?? '', ['admin', 'manager', 'staff'], 
     <?php if (can('manage_levels')): ?>
       <a class="nav-link<?= $sb_act('levels') ?>" href="<?= e(url('levels')) ?>"><i class="fa-solid fa-sliders"></i><span>Customize Levels</span></a>
     <?php endif; ?>
+    <?php if (can('addons')): ?>
+      <a class="nav-link<?= $sb_act('addons') ?>" href="<?= e(url('addons')) ?>"><i class="fa-solid fa-layer-group"></i><span>Addons</span></a>
+      <a class="nav-link<?= $sb_act('addon-ingredients') ?>" href="<?= e(url('addon-ingredients')) ?>"><i class="fa-solid fa-flask"></i><span>Addon Ingredients</span></a>
+    <?php endif; ?>
 
     <?php if (can('cash_reconciliation')): ?>
       <a class="nav-link<?= $sb_act('reconciliation_report.php') ?>" href="<?= e(root_url('reconciliation_report.php')) ?>"><i class="fa-solid fa-cash-register"></i><span>Cash Count</span><?php if ($sb_recon_alerts > 0): ?><span class="badge-pill badge-red"><?= $sb_recon_alerts ?></span><?php endif; ?></a>
@@ -313,7 +329,7 @@ $_can_stands = in_array($_SESSION['role'] ?? '', ['admin', 'manager', 'staff'], 
       <a class="nav-link<?= $sb_act('settings') ?>" href="<?= e(url('settings')) ?>"><i class="fa-solid fa-sliders"></i><span>Promotions</span></a>
     <?php endif; ?>
     <?php if (can('my_profile')): ?>
-      <a class="nav-link<?= $sb_act('profile.php') ?>" href="<?= e(root_url('profile.php')) ?>"><i class="fa-solid fa-circle-user"></i><span>My Profile</span></a>
+      <a class="nav-link<?= $sb_act('profile.php') ?>" href="<?= e(url('profile')) ?>"><i class="fa-solid fa-circle-user"></i><span>My Profile</span></a>
     <?php endif; ?>
 
   </nav>

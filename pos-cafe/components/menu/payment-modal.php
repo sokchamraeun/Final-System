@@ -106,7 +106,39 @@ $add_to_order_mode = $add_to_order_mode ?? 0;
     <div class="cp-receipt-actions" id="cpReceiptActions">
       <button type="button" class="cp-receipt-btn cp-receipt-btn-print" onclick="cpPrintReceipt()"><i class="fa-solid fa-print"></i> Print</button>
       <button type="button" class="cp-receipt-btn cp-receipt-btn-cancel" id="cpBtnCancelOrder" style="display:none" onclick="cpCancelAndContinue()"><i class="fa-solid fa-ban"></i> Cancel & Continue</button>
+      <button type="button" class="cp-receipt-btn cp-receipt-btn-switch" id="cpBtnSwitchPayment" style="display:none" onclick="cpOpenSwitchModal()"><i class="fa-solid fa-arrows-rotate"></i> Switch Payment</button>
       <button type="button" class="cp-receipt-btn cp-receipt-btn-new" onclick="cpNewOrder()"><i class="fa-solid fa-plus"></i> New Order</button>
     </div>
+  </div>
+</div>
+
+<!-- Switch Payment Method Modal -->
+<div id="cpSwitchModal" class="cp-switch-modal">
+  <div class="cp-switch-card">
+    <div class="cp-switch-head">
+      <h3><i class="fa-solid fa-arrows-rotate" style="color:var(--orange, #14b8a6);"></i> Switch Payment Method</h3>
+      <button type="button" class="cp-switch-close" onclick="cpCloseSwitchModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <p class="cp-switch-desc">Choose a different payment method for this order:</p>
+    <div class="cp-switch-methods">
+      <div class="cp-pay-method selected" data-method="cash" onclick="cpConfirmSwitchMethod(this, 'cash')">
+        <input type="radio" name="switch_method" value="cash" checked>
+        <i class="cp-pm-ico fa-solid fa-money-bill-wave"></i><span class="cp-pm-lbl">Cash</span>
+        <i class="cp-pm-check fa-solid fa-circle-check"></i>
+      </div>
+      <div class="cp-pay-method" data-method="riel" onclick="cpConfirmSwitchMethod(this, 'riel')">
+        <input type="radio" name="switch_method" value="riel">
+        <i class="cp-pm-ico fa-solid fa-coins"></i><span class="cp-pm-lbl">Riel &#x17DB;</span>
+        <i class="cp-pm-check fa-solid fa-circle-check"></i>
+      </div>
+      <div class="cp-pay-method" data-method="paylater" onclick="cpConfirmSwitchMethod(this, 'paylater')">
+        <input type="radio" name="switch_method" value="paylater">
+        <i class="cp-pm-ico fa-solid fa-clock"></i><span class="cp-pm-lbl">Pay Later</span>
+        <i class="cp-pm-check fa-solid fa-circle-check"></i>
+      </div>
+    </div>
+    <button type="button" class="cp-pm-confirm" id="cpConfirmSwitchBtn" onclick="cpDoSwitchPayment()">
+      <i class="fa-solid fa-check"></i> <span>Confirm</span>
+    </button>
   </div>
 </div>

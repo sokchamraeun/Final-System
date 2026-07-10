@@ -21,6 +21,7 @@ if (!$rows) {
       <tr class="border-b border-slate-100 bg-slate-50 text-left text-xs font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900">
         <th class="px-5 py-3">No#</th>
         <th class="px-5 py-3">Name</th>
+        <th class="px-5 py-3">User Access</th>
         <th class="px-5 py-3">Phone</th>
         <th class="px-5 py-3">Job Title</th>
         <th class="px-5 py-3">Salary</th>
@@ -41,6 +42,17 @@ if (!$rows) {
             <?php endif; ?>
             <span class="font-medium text-slate-700 dark:text-slate-200"><?= e($r['name'] ?? '') ?></span>
           </div>
+        </td>
+        <td class="px-5 py-3">
+          <?php if (!empty($r['user_id'])): ?>
+          <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+            <i class="fa-solid fa-check-circle"></i> Yes
+          </span>
+          <?php else: ?>
+          <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+            <i class="fa-solid fa-xmark"></i> No
+          </span>
+          <?php endif; ?>
         </td>
         <td class="px-5 py-3 text-slate-600 dark:text-slate-300"><?= e($r['phone'] ?? '—') ?></td>
         <td class="px-5 py-3 text-slate-600 dark:text-slate-300"><?= e($r['job_title'] ?? '—') ?></td>

@@ -2,6 +2,8 @@
 declare(strict_types=1);
 $admins    = $admins    ?? [];
 $canManage = $canManage ?? false;
+$page      = (int) ($page    ?? 1);
+$perPage   = (int) ($perPage ?? PER_PAGE);
 
 if (!$admins) {
     component('common/empty-state', [
@@ -19,20 +21,22 @@ if (!$admins) {
   <table class="w-full text-sm">
     <thead>
       <tr class="border-b border-slate-100 bg-slate-50 text-left text-xs font-semibold uppercase text-slate-500 dark:border-slate-800 dark:bg-slate-900">
+        <th class="px-5 py-3 w-12">No#</th>
+        <th class="px-5 py-3">Name Employee</th>
         <th class="px-5 py-3">Username</th>
         <th class="px-5 py-3">Role</th>
-        <th class="px-5 py-3">Created</th>
         <?php if ($canManage): ?>
         <th class="px-5 py-3 text-right">Actions</th>
         <?php endif; ?>
       </tr>
     </thead>
     <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-      <?php foreach ($admins as $a): ?>
+      <?php foreach ($admins as $i => $a): ?>
       <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-        <td class="px-5 py-3 font-medium text-slate-800 dark:text-white"><?= e($a['username']) ?></td>
+        <td class="px-5 py-3 text-slate-500 dark:text-slate-400"><?= ($page - 1) * $perPage + $i + 1 ?></td>
+        <td class="px-5 py-3 font-medium text-slate-800 dark:text-white"><?= e($a['employee_name'] ?? '—') ?></td>
+        <td class="px-5 py-3 text-slate-600 dark:text-slate-300"><?= e($a['username']) ?></td>
         <td class="px-5 py-3 text-slate-600 dark:text-slate-300"><?= e($a['role_name'] ?? '—') ?></td>
-        <td class="px-5 py-3 text-slate-500"><?= e($a['created_at'] ?? '—') ?></td>
         <?php if ($canManage): ?>
         <td class="px-5 py-3 text-right">
           <div class="flex items-center justify-end gap-1">

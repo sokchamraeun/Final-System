@@ -37,9 +37,11 @@ final class User
         $offset = ($page - 1) * $perPage;
         $rows   = $this->db->all(
             "SELECT u.user_id, u.username, u.must_change_password, u.reset_token,
-                    u.reset_token_expires, u.role_id, r.name AS role_name
+                    u.reset_token_expires, u.role_id, r.name AS role_name,
+                    e.name AS employee_name
              FROM users u
              LEFT JOIN roles r ON r.id = u.role_id
+             LEFT JOIN employees e ON e.user_id = u.user_id
              {$whereSql}
              ORDER BY u.username
              LIMIT ? OFFSET ?",

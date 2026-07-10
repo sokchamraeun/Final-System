@@ -15,6 +15,7 @@ $sizeLevels  = $levelModel->active();
 $iceLevels   = $levelModel->setTable('ice_levels')->active();
 $sugarLevels = $levelModel->setTable('sugar_levels')->active();
 $milkLevels  = $levelModel->setTable('milk_levels')->active();
+$addons      = (new Addon())->all();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!csrf_verify($_POST['csrf_token'] ?? null)) {
@@ -56,12 +57,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
 
         if ($hasSizes) {
-            $model->saveSizes($id, $_POST['size_level_ids'] ?? [], $_POST['size_prices'] ?? [], $_POST['size_factors'] ?? []);
+            $model->saveSizes($id, $_POST['size_level_ids'] ?? [], $_POST['size_prices'] ?? [], $_POST['size_factors'] ?? [], $_POST['size_promo_pcts'] ?? []);
         }
 
         $model->saveIceLevels($id, $_POST['ice_level_ids'] ?? []);
         $model->saveSugarLevels($id, $_POST['sugar_level_ids'] ?? []);
         $model->saveMilkLevels($id, $_POST['milk_level_ids'] ?? []);
+        $model->saveAddonIds($id, $_POST['addon_ids'] ?? []);
 
         flash('Product created.', 'success');
         redirect(url('pages/products/index.php'));
@@ -82,5 +84,6 @@ component('products/product-form', [
     'iceLevels'   => $iceLevels,
     'sugarLevels' => $sugarLevels,
     'milkLevels'  => $milkLevels,
+    'addons'      => $addons,
 ]);
 component('layout/footer');

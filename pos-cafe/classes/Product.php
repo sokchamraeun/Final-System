@@ -37,8 +37,11 @@ final class Product
             $params[] = '%' . $filters['search'] . '%';
         }
         if (!empty($filters['category'])) {
-            $where[]  = 'p.category = ?';
-            $params[] = $filters['category'];
+            $catId = (int) $this->db->scalar("SELECT category_id FROM categories WHERE slug = ?", [$filters['category']]);
+            if ($catId > 0) {
+                $where[]  = 'p.category_id = ?';
+                $params[] = $catId;
+            }
         }
         if (isset($filters['available']) && $filters['available'] !== null) {
             $where[]  = 'p.is_available = ?';
@@ -60,7 +63,9 @@ final class Product
                     c.name AS category_name,
                     GROUP_CONCAT(DISTINCT szl.name ORDER BY ps.sort_order SEPARATOR ', ') AS sizes,
                     GROUP_CONCAT(DISTINCT ice.name ORDER BY ice.id SEPARATOR ', ') AS ice_levels,
-                    GROUP_CONCAT(DISTINCT sug.name ORDER BY sug.id SEPARATOR ', ') AS sugar_levels
+                    GROUP_CONCAT(DISTINCT sug.name ORDER BY sug.id SEPARATOR ', ') AS sugar_levels,
+                    GROUP_CONCAT(DISTINCT mlk.name ORDER BY mlk.id SEPARATOR ', ') AS milk_levels,
+                    GROUP_CONCAT(DISTINCT ad.name ORDER BY ad.name SEPARATOR ', ') AS addon_names
              FROM products p
              LEFT JOIN categories c ON c.category_id = p.category_id
              LEFT JOIN product_sizes ps ON ps.product_id = p.product_id
@@ -69,6 +74,10 @@ final class Product
              LEFT JOIN ice_levels ice ON ice.id = pic.ice_level_id
              LEFT JOIN product_sugar_levels psl ON psl.product_id = p.product_id
              LEFT JOIN sugar_levels sug ON sug.id = psl.sugar_level_id
+             LEFT JOIN product_milk_levels pml ON pml.product_id = p.product_id
+             LEFT JOIN milk_levels mlk ON mlk.id = pml.milk_level_id
+             LEFT JOIN product_addons pa ON pa.product_id = p.product_id
+             LEFT JOIN addons ad ON ad.addon_id = pa.addon_id
              {$whereSql}
              GROUP BY p.product_id
              ORDER BY p.category, p.name
@@ -173,7 +182,7 @@ final class Product
         );
     }
 
-    public function saveSizes(int $productId, array $sizeLevelIds, array $prices, array $factors): void
+    public function saveSizes(int $productId, array $sizeLevelIds, array $prices, array $factors, array $promoPcts = []): void
     {
         $this->db->execute("DELETE FROM product_sizes WHERE product_id = ?", [$productId]);
         $levels = $this->db->all("SELECT id, name FROM size_levels ORDER BY display_order");
@@ -188,9 +197,10 @@ final class Product
             $label  = $nameMap[$slid] ?? '';
             $price  = (float) ($prices[$i] ?? 0);
             $factor = (float) ($factors[$i] ?? 1);
+            $pct    = min(90, max(0, (float) ($promoPcts[$i] ?? 0)));
             $this->db->insert(
-                "INSERT INTO product_sizes (product_id, size_level_id, size_code, label, price, size_factor, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                [$productId, $slid, $code, $label, $price, $factor, $i]
+                "INSERT INTO product_sizes (product_id, size_level_id, size_code, label, price, size_factor, sort_order, promo_pct) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                [$productId, $slid, $code, $label, $price, $factor, $i, $pct]
             );
         }
     }
@@ -269,6 +279,29 @@ final class Product
             $this->db->insert(
                 "INSERT INTO product_milk_levels (product_id, milk_level_id) VALUES (?, ?)",
                 [$productId, $lid]
+            );
+        }
+    }
+
+    /** @return array<int,int> */
+    public function getAddonIds(int $productId): array
+    {
+        return array_map(
+            fn($r) => (int) $r['addon_id'],
+            $this->db->all("SELECT addon_id FROM product_addons WHERE product_id = ?", [$productId])
+        );
+    }
+
+    /** @param int[] $ids */
+    public function saveAddonIds(int $productId, array $ids): void
+    {
+        $this->db->execute("DELETE FROM product_addons WHERE product_id = ?", [$productId]);
+        foreach ($ids as $aid) {
+            $aid = (int) $aid;
+            if ($aid <= 0) continue;
+            $this->db->insert(
+                "INSERT INTO product_addons (product_id, addon_id) VALUES (?, ?)",
+                [$productId, $aid]
             );
         }
     }

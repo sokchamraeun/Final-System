@@ -22,17 +22,17 @@
       --card-shadow: 0 4px 16px rgba(0,0,0,0.08); --card-shadow-hover: 0 12px 32px rgba(0,0,0,0.14); --card-radius: 18px;
     }
     [data-theme="dark"] {
-      --bg: #000000; --bg-card: #111111; --bg-card-hover: #1a1a1a; --bg-input: #1a1a1a; --bg-header: rgba(0,0,0,0.96);
-      --border: #222222; --border-hover: #333333;
-      --text: #f1f5f9; --text-sec: #94a3b8; --text-muted: #555555; --text-inv: #000;
+      --bg: #0f172a; --bg-card: #1e293b; --bg-card-hover: #243145; --bg-input: #1e293b; --bg-header: rgba(15,23,42,0.96);
+      --border: #334155; --border-hover: #475569;
+      --text: #f1f5f9; --text-sec: #94a3b8; --text-muted: #64748b; --text-inv: #fff;
       --shadow-sm: 0 1px 3px rgba(0,0,0,0.3); --shadow-md: 0 4px 16px rgba(0,0,0,0.4); --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-      --card-bg: #0a0a0a; --card-bg-card: #111111; --card-border: #222222;
-      --card-text: #f1f5f9; --card-text-sec: #94a3b8; --card-text-muted: #555555;
+      --card-bg: #0f172a; --card-bg-card: #1e293b; --card-border: #334155;
+      --card-text: #f1f5f9; --card-text-sec: #94a3b8; --card-text-muted: #64748b;
       --card-shadow: 0 8px 24px rgba(0,0,0,0.5); --card-shadow-hover: 0 18px 40px rgba(0,0,0,0.6);
-      --orange: #d1904b; --orange-dark: #a0702a; --orange-light: #e8b87a; --orange-glow: rgba(209,144,75,0.18);
-      --shadow-accent: 0 4px 20px rgba(209,144,75,0.25);
-      --card-primary: #d1904b; --card-primary-dark: #a0702a; --card-primary-glow: rgba(209,144,75,0.35);
-      --card-badge: #d1904b; --card-badge-glow: rgba(209,144,75,0.35); --card-price: #d1904b;
+      --orange: #14b8a6; --orange-dark: #0d9488; --orange-light: #5eead4; --orange-glow: rgba(20,184,166,0.18);
+      --shadow-accent: 0 4px 20px rgba(20,184,166,0.25);
+      --card-primary: #14b8a6; --card-primary-dark: #0d9488; --card-primary-glow: rgba(20,184,166,0.35);
+      --card-badge: #14b8a6; --card-badge-glow: rgba(20,184,166,0.35); --card-price: #14b8a6;
     }
 
     /* ── BASE (POS full-height layout) ── */
@@ -330,6 +330,33 @@
     .cp-receipt-btn-print:hover { filter: brightness(1.1); }
     .cp-receipt-btn-cancel { background: #e74c3c; color: #fff; }
     .cp-receipt-btn-cancel:hover { filter: brightness(1.1); }
+    .cp-receipt-btn-cash { background: #27ae60; color: #fff; }
+    .cp-receipt-btn-cash:hover { filter: brightness(1.1); }
+    .cp-receipt-btn-switch { background: #f39c12; color: #fff; }
+    .cp-receipt-btn-switch:hover { filter: brightness(1.1); }
+    .cp-switch-modal { @apply hidden fixed inset-0 z-[10001] items-center justify-center p-5; background: rgba(0,0,0,.5); backdrop-filter: blur(6px); }
+    .cp-switch-modal.active { @apply flex; }
+    .cp-switch-card { @apply rounded-2xl w-full max-w-[360px] pt-[22px] px-[22px] pb-[18px] relative; background: var(--bg-card,#fff); border: 1px solid var(--border,#e0d4c4); box-shadow: 0 12px 48px rgba(90,60,20,.18); animation: cpPmIn .22s ease both; }
+    .cp-switch-head { @apply flex items-center justify-between mb-3; }
+    .cp-switch-head h3 { @apply text-base font-bold m-0; color: var(--text,#1a1410); }
+    .cp-switch-close { @apply border-0 text-xl cursor-pointer leading-none; background: none; color: var(--text-muted,#9a8070); }
+    .cp-switch-desc { @apply text-[12px] mb-3; color: var(--text-sec,#5a4a3a); }
+    .cp-switch-methods { @apply flex flex-col gap-2 mb-3; }
+    .cp-switch-methods .cp-pay-method { @apply flex items-center gap-2 px-4 py-3 rounded-[14px] cursor-pointer select-none transition-all; border: 1.5px solid var(--border,#e0d4c4); background: var(--bg,#f4efe9); color: var(--text-sec,#5a4a3a); }
+    .cp-switch-methods .cp-pay-method:hover { border-color: #b0a090; }
+    .cp-switch-methods .cp-pay-method.selected { border-color: var(--orange); background: rgba(20,184,166,.1); color: var(--orange); box-shadow: 0 0 0 2px rgba(20,184,166,.15); }
+    .cp-switch-methods .cp-pay-method input { @apply hidden; }
+    .cp-switch-methods .cp-pm-ico { font-size: 16px; width: 24px; }
+    .cp-switch-methods .cp-pm-lbl { font-size: 13px; font-weight: 500; }
+    .cp-switch-methods .cp-pm-check { font-size: 16px; opacity: 0; transition: opacity .2s; color: var(--orange); margin-left: auto; }
+    .cp-switch-methods .cp-pay-method.selected .cp-pm-check { opacity: 1; }
+    [data-theme="dark"] .cp-switch-card { background: #1e293b; border-color: #334155; }
+    [data-theme="dark"] .cp-switch-head h3 { color: #f1f5f9; }
+    [data-theme="dark"] .cp-switch-close { color: #64748b; }
+    [data-theme="dark"] .cp-switch-desc { color: #94a3b8; }
+    [data-theme="dark"] .cp-switch-methods .cp-pay-method { background: #0f172a; border-color: #334155; color: #94a3b8; }
+    [data-theme="dark"] .cp-switch-methods .cp-pay-method:hover { border-color: #475569; }
+    [data-theme="dark"] .cp-switch-methods .cp-pay-method.selected { background: rgba(20,184,166,.12); border-color: #14b8a6; color: #14b8a6; }
     .cp-receipt-qr-btn { display:flex; align-items:center; justify-content:center; gap:6px; margin-top:8px; padding:8px 12px; border-radius:8px; border:none; background:#d1904b; color:#fff; font-size:12px; font-weight:600; text-decoration:none; cursor:pointer; transition:filter .2s; }
     .cp-receipt-qr-btn:hover { filter: brightness(1.1); }
     .cp-paid-badge { text-align:center; font-size:16px; font-weight:800; color:#22c55e; margin-top:4px; animation: cpPaidIn .5s cubic-bezier(.16,1,.3,1) both; }
@@ -363,6 +390,7 @@
     .pm-btn2.active { @apply font-semibold; background: #0F9D94; border-color: #0F9D94; color: #fff; box-shadow: 0 2px 8px rgba(15,157,148,.25); }
     .pm-btn2 .pm-price-tag { @apply block text-[10px] font-normal mt-0.5; opacity: .75; }
     .pm-btn2.active .pm-price-tag { opacity: .9; }
+    .pm-old-price { text-decoration: line-through; opacity: .6; margin-right: 2px; font-size: 10px; }
     .pm-two-col { @apply grid gap-3; grid-template-columns: 1fr 1fr; }
     .pm-divider { @apply border-0 h-px my-3; background: #eee; }
     .pm-addons { @apply flex flex-wrap gap-2; }
@@ -430,78 +458,80 @@
     @keyframes cpPmIn { from { opacity: 0; transform: translateY(16px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
     /* ── DARK THEME OVERRIDES (non-token specifics) ── */
-    [data-theme="dark"] .cart-panel { background: #131313; border-left: 1px solid rgba(209,144,75,.08); box-shadow: -4px 0 24px rgba(0,0,0,.2); }
-    [data-theme="dark"] .cp-header { background: #131313; border-color: #222; }
-    [data-theme="dark"] .cp-hdr-count { background: #1e1e1e; color: #aaa; }
-    [data-theme="dark"] .cp-clear-btn { color: #555; }
-    [data-theme="dark"] .cp-clear-btn:hover { background: rgba(231,76,60,.08); color: #e74c3c; }
-    [data-theme="dark"] .cp-item:hover { background: rgba(209,144,75,.03); }
-    [data-theme="dark"] .cp-item + .cp-item { border-color: #1e1e1e; }
-    [data-theme="dark"] .cp-item-img { background: #1e1e1e; }
-    [data-theme="dark"] .cp-item-remove { color: #444; }
-    [data-theme="dark"] .cp-item-remove:hover { background: rgba(231,76,60,.08); color: #e74c3c; }
-    [data-theme="dark"] .cp-qty { background: #1a1a1a; border-color: #2a2a2a; }
-    [data-theme="dark"] .cp-qty input { color: #eee; }
-    [data-theme="dark"] .cp-summary { background: #131313; border-color: #1e1e1e; }
-    [data-theme="dark"] .cp-sum-divider { background: #222; }
-    [data-theme="dark"] .cp-options { background: #131313; border-color: #1e1e1e; }
-    [data-theme="dark"] .cp-opt-btn { background: #1a1a1a; border-color: #282828; color: #999; }
-    [data-theme="dark"] .cp-opt-btn.active { background: rgba(209,144,75,.12); border-color: #d1904b; color: #d1904b; }
-    [data-theme="dark"] .cp-opt-field input { background: #1a1a1a; border-color: #252525; color: #eee; }
-    [data-theme="dark"] .cp-loyalty-btn:hover { background: #a0702a; }
-    [data-theme="dark"] .cp-footer { background: #131313; border-color: #222; }
-    [data-theme="dark"] .cp-pay-method { background: #1a1a1a; border-color: #282828; color: #888; }
-    [data-theme="dark"] .cp-pay-method:hover { border-color: #444; }
-    [data-theme="dark"] .cp-pay-method.selected { background: rgba(209,144,75,.12); border-color: #d1904b; color: #d1904b; }
+    [data-theme="dark"] .cart-panel { background: #1e293b; border-left: 1px solid rgba(20,184,166,.08); box-shadow: -4px 0 24px rgba(0,0,0,.2); }
+    [data-theme="dark"] .cp-header { background: #1e293b; border-color: #334155; }
+    [data-theme="dark"] .cp-hdr-count { background: #334155; color: #94a3b8; }
+    [data-theme="dark"] .cp-clear-btn { color: #64748b; }
+    [data-theme="dark"] .cp-clear-btn:hover { background: rgba(231,76,60,.08); color: #ef4444; }
+    [data-theme="dark"] .cp-item:hover { background: rgba(20,184,166,.03); }
+    [data-theme="dark"] .cp-item + .cp-item { border-color: #334155; }
+    [data-theme="dark"] .cp-item-img { background: #334155; }
+    [data-theme="dark"] .cp-item-remove { color: #64748b; }
+    [data-theme="dark"] .cp-item-remove:hover { background: rgba(231,76,60,.08); color: #ef4444; }
+    [data-theme="dark"] .cp-qty { background: #0f172a; border-color: #334155; }
+    [data-theme="dark"] .cp-qty input { color: #f1f5f9; }
+    [data-theme="dark"] .cp-summary { background: #1e293b; border-color: #334155; }
+    [data-theme="dark"] .cp-sum-divider { background: #334155; }
+    [data-theme="dark"] .cp-options { background: #1e293b; border-color: #334155; }
+    [data-theme="dark"] .cp-opt-btn { background: #0f172a; border-color: #334155; color: #94a3b8; }
+    [data-theme="dark"] .cp-opt-btn.active { background: rgba(20,184,166,.12); border-color: #14b8a6; color: #14b8a6; }
+    [data-theme="dark"] .cp-opt-field input { background: #0f172a; border-color: #334155; color: #f1f5f9; }
+    [data-theme="dark"] .cp-loyalty-btn:hover { background: #0d9488; }
+    [data-theme="dark"] .cp-footer { background: #1e293b; border-color: #334155; }
+    [data-theme="dark"] .cp-pay-method { background: #0f172a; border-color: #334155; color: #94a3b8; }
+    [data-theme="dark"] .cp-pay-method:hover { border-color: #475569; }
+    [data-theme="dark"] .cp-pay-method.selected { background: rgba(20,184,166,.12); border-color: #14b8a6; color: #14b8a6; }
     [data-theme="dark"] .cp-pm-item:nth-child(odd) { background: rgba(255,255,255,.03); }
-    [data-theme="dark"] .cp-split-row input { background: #1a1a1a; border-color: #252525; color: #eee; }
+    [data-theme="dark"] .cp-split-row input { background: #0f172a; border-color: #334155; color: #f1f5f9; }
     [data-theme="dark"] .cp-change-calc { background: rgba(85,224,135,.02); border-color: rgba(85,224,135,.1); }
-    [data-theme="dark"] .cp-change-calc input { background: #1a1a1a; border-color: #2a2a2a; color: #eee; }
+    [data-theme="dark"] .cp-change-calc input { background: #0f172a; border-color: #334155; color: #f1f5f9; }
 
     [data-theme="dark"] .cp-add-order-note { background: rgba(155,89,182,.08); border-color: rgba(155,89,182,.25); }
-    [data-theme="dark"] .cp-paymodal-card { background: #161616; border-color: #252525; }
-    [data-theme="dark"] .cp-pm-breakdown { background: #1a1a1a; border-color: #252525; }
-    [data-theme="dark"] .menu-header { background: rgba(14,14,14,.96); border-color: #252525; }
-    [data-theme="dark"] .cat-bar { background: rgba(14,14,14,.96); border-color: #252525; }
+    [data-theme="dark"] .cp-paymodal-card { background: #1e293b; border-color: #334155; }
+    [data-theme="dark"] .cp-pm-breakdown { background: #0f172a; border-color: #334155; }
+    [data-theme="dark"] .menu-header { background: rgba(15,23,42,.96); border-color: #334155; }
+    [data-theme="dark"] .cat-bar { background: rgba(15,23,42,.96); border-color: #334155; }
     [data-theme="dark"] .cat-pill { color: rgba(255,255,255,.5); }
-    [data-theme="dark"] .cat-pill:hover { color: #D89A4C; }
+    [data-theme="dark"] .cat-pill:hover { color: #14b8a6; }
     [data-theme="dark"] .cat-pill .pill-count { background: rgba(255,255,255,.15); color: rgba(255,255,255,.5); }
-    [data-theme="dark"] .cat-pill:not(.active) .pill-count { background: rgba(216,154,76,.15); color: #D89A4C; }
-    [data-theme="dark"] .cat-pill.active { background: linear-gradient(145deg,#a0702a,#d1904b); box-shadow: inset 0 3px 7px rgba(0,0,0,.3), 0 4px 20px rgba(209,144,75,.4); }
-    [data-theme="dark"] .cp-pm-confirm { background: linear-gradient(135deg,#d99a55,#c07f37); box-shadow: 0 6px 18px rgba(209,144,75,.28); }
-    [data-theme="dark"] .cp-receipt-card { background: #161616; border-color: #252525; }
-    [data-theme="dark"] .cp-receipt-head h3 { color: #e0d4c4; }
-    [data-theme="dark"] .cp-receipt-close { color: #555; }
-    [data-theme="dark"] .cp-receipt-name { color: #e0d4c4; }
-    [data-theme="dark"] .cp-receipt-divider { border-color: #252525; }
-    [data-theme="dark"] .cp-rf-value { color: #e0d4c4; }
-    [data-theme="dark"] .cp-receipt-item-name { color: #e0d4c4; }
-    [data-theme="dark"] .cp-receipt-btn-new { background: linear-gradient(135deg,#d99a55,#c07f37); }
+    [data-theme="dark"] .cat-pill:not(.active) .pill-count { background: rgba(20,184,166,.15); color: #14b8a6; }
+    [data-theme="dark"] .cat-pill.active { background: linear-gradient(145deg,#0d9488,#14b8a6); box-shadow: inset 0 3px 7px rgba(0,0,0,.3), 0 4px 20px rgba(20,184,166,.4); }
+    [data-theme="dark"] .cp-pm-confirm { background: linear-gradient(135deg,#14b8a6,#0d9488); box-shadow: 0 6px 18px rgba(20,184,166,.28); }
+    [data-theme="dark"] .cp-receipt-card { background: #1e293b; border-color: #334155; }
+    [data-theme="dark"] .cp-receipt-head h3 { color: #f1f5f9; }
+    [data-theme="dark"] .cp-receipt-close { color: #64748b; }
+    [data-theme="dark"] .cp-receipt-name { color: #f1f5f9; }
+    [data-theme="dark"] .cp-receipt-divider { border-color: #334155; }
+    [data-theme="dark"] .cp-rf-value { color: #f1f5f9; }
+    [data-theme="dark"] .cp-receipt-item-name { color: #f1f5f9; }
+    [data-theme="dark"] .cp-receipt-btn-new { background: linear-gradient(135deg,#14b8a6,#0d9488); }
     [data-theme="dark"] .cp-receipt-btn-print { background: #475569; }
-    [data-theme="dark"] .cp-receipt-btn-cancel { background: #c0392b; }
-    [data-theme="dark"] .cp-receipt-qr-btn { background: linear-gradient(135deg,#d99a55,#c07f37); }
-    [data-theme="dark"] .pm-card { background: #1a1a1a; box-shadow: 0 25px 80px rgba(0,0,0,.6); }
-    [data-theme="dark"] .pm-name { color: #f0f0f0; }
-    [data-theme="dark"] .pm-close2 { background: #222; border-color: #333; color: #888; }
-    [data-theme="dark"] .pm-close2:hover { background: #2a2a2a; color: #fff; }
-    [data-theme="dark"] .pm-btn2 { background: #222; border-color: #333; color: #ccc; }
-    [data-theme="dark"] .pm-btn2:hover { border-color: #0F9D94; color: #0F9D94; }
-    [data-theme="dark"] .pm-btn2.active { background: #0F9D94; color: #fff; }
-    [data-theme="dark"] .pm-addon-btn { background: #222; border-color: #333; color: #ccc; }
-    [data-theme="dark"] .pm-addon-btn:hover { border-color: #0F9D94; color: #0F9D94; }
-    [data-theme="dark"] .pm-addon-btn.active { background: #0F9D94; color: #fff; }
-    [data-theme="dark"] .pm-label { color: #ccc; }
-    [data-theme="dark"] .pm-divider { background: #2a2a2a; }
-    [data-theme="dark"] .pm-footer2 { background: #1a1a1a; border-color: #2a2a2a; }
-    [data-theme="dark"] .pm-price-row { color: #888; }
-    [data-theme="dark"] .pm-price-row span:last-child { color: #eee; }
-    [data-theme="dark"] .pm-qty-row button { background: #222; border-color: #333; color: #888; }
-    [data-theme="dark"] .pm-qty-row button:hover { color: #0F9D94; border-color: #0F9D94; }
-    [data-theme="dark"] .pm-qty-row span { color: #eee; }
-    [data-theme="dark"] .pm-subtitle { color: #777; }
-    [data-theme="dark"] .menu-scroll { scrollbar-color: rgba(209,144,75,.35) transparent; }
-    [data-theme="dark"] .menu-scroll::-webkit-scrollbar-thumb { background: rgba(209,144,75,.35); }
-    [data-theme="dark"] .menu-scroll::-webkit-scrollbar-thumb:hover { background: rgba(209,144,75,.65); }
+    [data-theme="dark"] .cp-receipt-btn-cancel { background: #ef4444; }
+    [data-theme="dark"] .cp-receipt-btn-cash { background: #22c55e; }
+    [data-theme="dark"] .cp-receipt-btn-switch { background: #f59e0b; }
+    [data-theme="dark"] .cp-receipt-qr-btn { background: linear-gradient(135deg,#14b8a6,#0d9488); }
+    [data-theme="dark"] .pm-card { background: #1e293b; box-shadow: 0 25px 80px rgba(0,0,0,.6); }
+    [data-theme="dark"] .pm-name { color: #f1f5f9; }
+    [data-theme="dark"] .pm-close2 { background: #334155; border-color: #475569; color: #94a3b8; }
+    [data-theme="dark"] .pm-close2:hover { background: #475569; color: #fff; }
+    [data-theme="dark"] .pm-btn2 { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+    [data-theme="dark"] .pm-btn2:hover { border-color: #14b8a6; color: #14b8a6; }
+    [data-theme="dark"] .pm-btn2.active { background: #14b8a6; color: #fff; }
+    [data-theme="dark"] .pm-addon-btn { background: #0f172a; border-color: #334155; color: #cbd5e1; }
+    [data-theme="dark"] .pm-addon-btn:hover { border-color: #14b8a6; color: #14b8a6; }
+    [data-theme="dark"] .pm-addon-btn.active { background: #14b8a6; color: #fff; }
+    [data-theme="dark"] .pm-label { color: #94a3b8; }
+    [data-theme="dark"] .pm-divider { background: #334155; }
+    [data-theme="dark"] .pm-footer2 { background: #1e293b; border-color: #334155; }
+    [data-theme="dark"] .pm-price-row { color: #94a3b8; }
+    [data-theme="dark"] .pm-price-row span:last-child { color: #f1f5f9; }
+    [data-theme="dark"] .pm-qty-row button { background: #334155; border-color: #475569; color: #94a3b8; }
+    [data-theme="dark"] .pm-qty-row button:hover { color: #14b8a6; border-color: #14b8a6; }
+    [data-theme="dark"] .pm-qty-row span { color: #f1f5f9; }
+    [data-theme="dark"] .pm-subtitle { color: #64748b; }
+    [data-theme="dark"] .menu-scroll { scrollbar-color: rgba(20,184,166,.35) transparent; }
+    [data-theme="dark"] .menu-scroll::-webkit-scrollbar-thumb { background: rgba(20,184,166,.35); }
+    [data-theme="dark"] .menu-scroll::-webkit-scrollbar-thumb:hover { background: rgba(20,184,166,.65); }
 
     @media (prefers-reduced-motion: reduce) {
       .cp-paymodal-card { animation: none; }
